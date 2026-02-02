@@ -40,6 +40,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+I2C_HandleTypeDef hi2c1;
+
 I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
@@ -63,13 +65,33 @@ static void MX_TIM1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART3_UART_Init(void);
+static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/* USER CODE BEGIN 0 */
+#include <stdint.h>
 
+#define VL53_ADDR_7BIT   (0x29)
+#define VL53_ADDR_8BIT   (VL53_ADDR_7BIT << 1)
+
+static uint8_t i2c_find_first_device(I2C_HandleTypeDef *hi2c)
+{
+    for (uint8_t addr = 1; addr < 127; addr++)
+    {
+        if (HAL_I2C_IsDeviceReady(hi2c, (uint16_t)(addr << 1), 2, 10) == HAL_OK)
+            return addr;
+    }
+    return 0; // none found
+}
+
+static HAL_StatusTypeDef vl53_read8(I2C_HandleTypeDef *hi2c, uint16_t reg, uint8_t *val)
+{
+    return HAL_I2C_Mem_Read(hi2c, VL53_ADDR_8BIT, reg, I2C_MEMADD_SIZE_16BIT, val, 1, 100);
+}
 /* USER CODE END 0 */
 
 /**
@@ -107,7 +129,34 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART3_UART_Init();
+  MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
+  /* USER CODE BEGIN 2 */
+  HAL_GPIO_WritePin(VL53Sensor1_GPIO_Port, VL53Sensor1_Pin, GPIO_PIN_SET);
+  HAL_Delay(10);  // wait for sensor to boot
+
+
+  volatile uint8_t found_addr = 0;
+  volatile uint8_t model_id = 0;
+  volatile uint8_t module_type = 0;
+  volatile HAL_StatusTypeDef st_model = HAL_ERROR;
+  volatile HAL_StatusTypeDef st_type  = HAL_ERROR;
+
+  // Scan I2C bus
+  found_addr = i2c_find_first_device(&hi2c1);
+
+  // If VL53L1X is present at 0x29, read a couple ID registers
+  if (found_addr == VL53_ADDR_7BIT)
+  {
+      st_model = vl53_read8(&hi2c1, 0x010F, (uint8_t*)&model_id);
+      st_type  = vl53_read8(&hi2c1, 0x0110, (uint8_t*)&module_type);
+  }
+
+  // Put a breakpoint on the next line and inspect variables in Debug:
+  // found_addr should be 0x29
+  // st_model and st_type should be HAL_OK
+  // model_id / module_type should be non-zero
+  __NOP();
 
   /* USER CODE END 2 */
 
@@ -165,6 +214,40 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief I2C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C1_Init(void)
+{
+
+  /* USER CODE BEGIN I2C1_Init 0 */
+
+  /* USER CODE END I2C1_Init 0 */
+
+  /* USER CODE BEGIN I2C1_Init 1 */
+
+  /* USER CODE END I2C1_Init 1 */
+  hi2c1.Instance = I2C1;
+  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c1.Init.OwnAddress1 = 0;
+  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c1.Init.OwnAddress2 = 0;
+  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C1_Init 2 */
+
+  /* USER CODE END I2C1_Init 2 */
+
 }
 
 /**
@@ -506,14 +589,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : Audio_SDA_Pin */
-  GPIO_InitStruct.Pin = Audio_SDA_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
-  HAL_GPIO_Init(Audio_SDA_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MEMS_INT2_Pin */
   GPIO_InitStruct.Pin = MEMS_INT2_Pin;
