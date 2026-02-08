@@ -1,18 +1,20 @@
-# STM32CubeIDE / Eclipse
-Debug/
-Release/
-*.launch
-.settings/
-.project
-.cproject
-
-# Build outputs
-*.o
-*.d
-*.elf
-*.map
-*.bin
-*.hex
-
 # macOS
 .DS_Store
+
+# STM32CubeIDE / Eclipse
+.metadata/
+.settings/
+*.launch
+
+# Build outputs
+Debug/
+Release/
+*/Debug/
+*/Release/
+
+# CubeMX generated backup/temp
+*.ioc.bak
+*.mxproject
+
+# Misc
+*.log
