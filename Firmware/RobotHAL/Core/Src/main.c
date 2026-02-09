@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -42,10 +41,13 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c3;
 
 I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
+
+TIM_HandleTypeDef htim3;
 
 /* USER CODE BEGIN PV */
 
@@ -57,15 +59,65 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
-void MX_USB_HOST_Process(void);
-
+static void MX_I2C3_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#include <string.h>
+#include <stdint.h>
 
+// VL53L1X uses I2C address byte 0x52/0x53 (8-bit) per datasheet  [oai_citation:2‡vl53l1x.pdf](sediment://file_0000000055e0722fb961f491f9095d9f)
+// In HAL, we pass the 7-bit address left-shifted by 1.
+// 0x52 >> 1 = 0x29 (7-bit)
+#define VL53L1X_ADDR_7BIT   (0x29)
+#define VL53L1X_ADDR_HAL    (VL53L1X_ADDR_7BIT << 1)
+
+// Reference registers from datasheet Table 8  [oai_citation:3‡vl53l1x.pdf](sediment://file_0000000055e0722fb961f491f9095d9f)
+#define VL53_REG_MODEL_ID   0x010F
+#define VL53_REG_MODULE_TYPE 0x0110
+#define VL53_REG_MASK_REV   0x0111
+
+static HAL_StatusTypeDef vl53_write_u16_index(I2C_HandleTypeDef *hi2c, uint16_t reg, const uint8_t *data, uint16_t len)
+{
+  // Datasheet: second byte(s) provide a 16-bit index (MSB first)  [oai_citation:4‡vl53l1x.pdf](sediment://file_0000000055e0722fb961f491f9095d9f)
+  uint8_t buf[2 + 32];
+  if (len > 32) return HAL_ERROR;
+
+  buf[0] = (uint8_t)(reg >> 8);
+  buf[1] = (uint8_t)(reg & 0xFF);
+  if (len && data) memcpy(&buf[2], data, len);
+
+  return HAL_I2C_Master_Transmit(hi2c, VL53L1X_ADDR_HAL, buf, 2 + len, 100);
+}
+
+static HAL_StatusTypeDef vl53_read_u16_index(I2C_HandleTypeDef *hi2c, uint16_t reg, uint8_t *data, uint16_t len)
+{
+  // Datasheet read format: write index (0x52) then read data (0x53)  [oai_citation:5‡vl53l1x.pdf](sediment://file_0000000055e0722fb961f491f9095d9f)
+  uint8_t idx[2];
+  idx[0] = (uint8_t)(reg >> 8);
+  idx[1] = (uint8_t)(reg & 0xFF);
+
+  HAL_StatusTypeDef st = HAL_I2C_Master_Transmit(hi2c, VL53L1X_ADDR_HAL, idx, 2, 100);
+  if (st != HAL_OK) return st;
+
+  return HAL_I2C_Master_Receive(hi2c, VL53L1X_ADDR_HAL, data, len, 100);
+}
+
+static void I2C_Scan(I2C_HandleTypeDef *hi2c)
+{
+  for (uint8_t addr = 1; addr < 127; addr++)
+  {
+    if (HAL_I2C_IsDeviceReady(hi2c, (addr << 1), 2, 10) == HAL_OK)
+    {
+      // Put a breakpoint here; watch 'addr'
+      __NOP();
+    }
+  }
+}
 /* USER CODE END 0 */
 
 /**
@@ -100,9 +152,27 @@ int main(void)
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
-  MX_USB_HOST_Init();
+  MX_I2C3_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+  // 1) Keep all XSHUT low (CubeMX already does this in MX_GPIO_Init)
+  // 2) Bring up ONLY sensor 1
+  HAL_GPIO_WritePin(VL53_XSHUT_1_GPIO_Port, VL53_XSHUT_1_Pin, GPIO_PIN_SET);
 
+  // Datasheet boot duration max 1.2 ms  [oai_citation:6‡vl53l1x.pdf](sediment://file_0000000055e0722fb961f491f9095d9f)
+  HAL_Delay(5);
+
+  // Quick scan: you should see addr = 0x29 hit in debugger
+  I2C_Scan(&hi2c3);
+
+  // Read reference ID registers (Table 8)
+  uint8_t model_id = 0, module_type = 0, mask_rev = 0;
+  HAL_StatusTypeDef s1 = vl53_read_u16_index(&hi2c3, VL53_REG_MODEL_ID, &model_id, 1);
+  HAL_StatusTypeDef s2 = vl53_read_u16_index(&hi2c3, VL53_REG_MODULE_TYPE, &module_type, 1);
+  HAL_StatusTypeDef s3 = vl53_read_u16_index(&hi2c3, VL53_REG_MASK_REV, &mask_rev, 1);
+
+  // Set a breakpoint on the next line and inspect model_id/module_type/mask_rev and s1/s2/s3
+  __NOP();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -110,7 +180,6 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
   }
@@ -197,6 +266,40 @@ static void MX_I2C1_Init(void)
 }
 
 /**
+  * @brief I2C3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C3_Init(void)
+{
+
+  /* USER CODE BEGIN I2C3_Init 0 */
+
+  /* USER CODE END I2C3_Init 0 */
+
+  /* USER CODE BEGIN I2C3_Init 1 */
+
+  /* USER CODE END I2C3_Init 1 */
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.ClockSpeed = 400000;
+  hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C3_Init 2 */
+
+  /* USER CODE END I2C3_Init 2 */
+
+}
+
+/**
   * @brief I2S3 Initialization Function
   * @param None
   * @retval None
@@ -269,6 +372,59 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 83;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -289,7 +445,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOE, VL53_XSHUT_1_Pin|VL53_XSHUT_2_Pin|VL53_XSHUT_3_Pin|MOTOR_A_IN1_Pin
+                          |MOTOR_A_IN2_Pin|MOTOR_B_IN1_Pin|MOTOR_B_IN2_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
@@ -298,12 +455,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
                           |Audio_RST_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : CS_I2C_SPI_Pin */
-  GPIO_InitStruct.Pin = CS_I2C_SPI_Pin;
+  /*Configure GPIO pins : VL53_XSHUT_1_Pin VL53_XSHUT_2_Pin VL53_XSHUT_3_Pin MOTOR_A_IN1_Pin
+                           MOTOR_A_IN2_Pin MOTOR_B_IN1_Pin MOTOR_B_IN2_Pin */
+  GPIO_InitStruct.Pin = VL53_XSHUT_1_Pin|VL53_XSHUT_2_Pin|VL53_XSHUT_3_Pin|MOTOR_A_IN1_Pin
+                          |MOTOR_A_IN2_Pin|MOTOR_B_IN1_Pin|MOTOR_B_IN2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(CS_I2C_SPI_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OTG_FS_PowerSwitchOn_Pin */
   GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin;
@@ -319,12 +478,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
   HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BOOT1_Pin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
@@ -348,6 +501,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : OTG_FS_ID_Pin OTG_FS_DM_Pin OTG_FS_DP_Pin */
+  GPIO_InitStruct.Pin = OTG_FS_ID_Pin|OTG_FS_DM_Pin|OTG_FS_DP_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pin : OTG_FS_OverCurrent_Pin */
   GPIO_InitStruct.Pin = OTG_FS_OverCurrent_Pin;

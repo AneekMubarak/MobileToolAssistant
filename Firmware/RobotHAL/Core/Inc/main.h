@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -57,8 +59,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define CS_I2C_SPI_Pin GPIO_PIN_3
-#define CS_I2C_SPI_GPIO_Port GPIOE
+#define VL53_XSHUT_1_Pin GPIO_PIN_4
+#define VL53_XSHUT_1_GPIO_Port GPIOE
+#define VL53_XSHUT_2_Pin GPIO_PIN_5
+#define VL53_XSHUT_2_GPIO_Port GPIOE
+#define VL53_XSHUT_3_Pin GPIO_PIN_6
+#define VL53_XSHUT_3_GPIO_Port GPIOE
 #define PC14_OSC32_IN_Pin GPIO_PIN_14
 #define PC14_OSC32_IN_GPIO_Port GPIOC
 #define PC15_OSC32_OUT_Pin GPIO_PIN_15
@@ -71,8 +77,6 @@ void Error_Handler(void);
 #define OTG_FS_PowerSwitchOn_GPIO_Port GPIOC
 #define PDM_OUT_Pin GPIO_PIN_3
 #define PDM_OUT_GPIO_Port GPIOC
-#define B1_Pin GPIO_PIN_0
-#define B1_GPIO_Port GPIOA
 #define I2S3_WS_Pin GPIO_PIN_4
 #define I2S3_WS_GPIO_Port GPIOA
 #define SPI1_SCK_Pin GPIO_PIN_5
@@ -83,6 +87,14 @@ void Error_Handler(void);
 #define SPI1_MOSI_GPIO_Port GPIOA
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
+#define MOTOR_A_IN1_Pin GPIO_PIN_8
+#define MOTOR_A_IN1_GPIO_Port GPIOE
+#define MOTOR_A_IN2_Pin GPIO_PIN_9
+#define MOTOR_A_IN2_GPIO_Port GPIOE
+#define MOTOR_B_IN1_Pin GPIO_PIN_10
+#define MOTOR_B_IN1_GPIO_Port GPIOE
+#define MOTOR_B_IN2_Pin GPIO_PIN_11
+#define MOTOR_B_IN2_GPIO_Port GPIOE
 #define CLK_IN_Pin GPIO_PIN_10
 #define CLK_IN_GPIO_Port GPIOB
 #define LD4_Pin GPIO_PIN_12
@@ -95,8 +107,6 @@ void Error_Handler(void);
 #define LD6_GPIO_Port GPIOD
 #define I2S3_MCK_Pin GPIO_PIN_7
 #define I2S3_MCK_GPIO_Port GPIOC
-#define VBUS_FS_Pin GPIO_PIN_9
-#define VBUS_FS_GPIO_Port GPIOA
 #define OTG_FS_ID_Pin GPIO_PIN_10
 #define OTG_FS_ID_GPIO_Port GPIOA
 #define OTG_FS_DM_Pin GPIO_PIN_11
