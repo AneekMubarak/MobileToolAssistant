@@ -1,0 +1,6 @@
+tested with long wires (30cm) no issue.
+All connections were directly made between the DW1000 and the STM. No BB was used
+No twisted pair needed ( tried it, and it works too)
+works upto a max baud rate of 21.0 Mbits/sec (prescalar = 4)
+
+If SPI works correctly the id value must be 0xdeca0130
