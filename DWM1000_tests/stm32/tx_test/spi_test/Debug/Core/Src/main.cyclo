@@ -1,0 +1,16 @@
+../Core/Src/main.c:66:10:dwm_read_device_id	1
+../Core/Src/main.c:91:10:dwm_read_sys_status	1
+../Core/Src/main.c:113:10:dwm_read_reg_32	1
+../Core/Src/main.c:135:6:dwm_write_reg_32	1
+../Core/Src/main.c:156:6:dwm_write_sub_reg_32	1
+../Core/Src/main.c:179:10:dwm_read_sub_reg_32	1
+../Core/Src/main.c:247:10:dwm_read_sys_config	1
+../Core/Src/main.c:264:6:dwm_reset	1
+../Core/Src/main.c:281:10:dwm_read_sys_state	1
+../Core/Src/main.c:297:6:dwm_tx_test	1
+../Core/Src/main.c:358:5:main	2
+../Core/Src/main.c:454:6:SystemClock_Config	3
+../Core/Src/main.c:500:13:MX_I2C1_Init	2
+../Core/Src/main.c:534:13:MX_SPI1_Init	2
+../Core/Src/main.c:572:13:MX_GPIO_Init	1
+../Core/Src/main.c:700:6:Error_Handler	1
