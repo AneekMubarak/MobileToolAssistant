@@ -63,6 +63,29 @@ void MX_USB_HOST_Process(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+
+//void dwm_read_sub_reg_len(uint8_t reg_file_id,
+//                      uint8_t sub_reg,
+//                      uint8_t *data,
+//                      uint8_t len)
+//{
+//    uint8_t tx[2 + len];
+//    uint8_t rx[2 + len];
+//
+//    tx[0] = (1 << 6) | (reg_file_id & 0x3F);
+//    tx[1] = sub_reg & 0x7F;
+//
+//    for (int i = 2; i < 2 + len; i++)
+//        tx[i] = 0;
+//
+//    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_RESET);
+//    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 2 + len, HAL_MAX_DELAY);
+//    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_SET);
+//
+//    memcpy(data, &rx[2], len);
+//}
+
+
 uint32_t dwm_read_device_id(void)
 {
     uint8_t tx[5] = {0};
@@ -86,7 +109,6 @@ uint32_t dwm_read_device_id(void)
 #define SYS_STATUS 0x0F
 #define SYS_CONFIG 0x04
 
-#define TXFRS_MASK 0x00000080
 
 uint32_t dwm_read_sys_status(void)
 {
@@ -200,46 +222,109 @@ uint32_t dwm_read_sub_reg_32(uint8_t reg_file_id, uint8_t sub_reg)
     return (rx[5] << 24) | (rx[4] << 16) | (rx[3] << 8) | rx[2];
 }
 
-// Minimal DW1000 initialization for transmit
-//void dwm_init_minimal(void)
-//{
-//    // 1. Load LDE microcode (MANDATORY - Table 4, page 24)
-//    dwm_write_sub_reg_32(0x36, 0x00, 0x0301);    // PMSC_CTRL0
-//    dwm_write_sub_reg_32(0x2D, 0x06, 0x8000);    // OTP_CTRL
-//    HAL_Delay(1);                                // Wait 150µs (1ms is safe)
-//    dwm_write_sub_reg_32(0x36, 0x00, 0x0200);    // PMSC_CTRL0
-//
-//    // 2. Fix the MOST critical default registers (Section 2.5.5)
-//
-//    // AGC_TUNE1 (for 16 MHz PRF)
-//    dwm_write_sub_reg_32(0x23, 0x04, 0x8870);    // Was 0x889B
-//
-//    // DRX_TUNE2
-//    dwm_write_sub_reg_32(0x27, 0x08, 0x311A002D); // Was 0x311E0035
-//
-//    // LDE_CFG2 (for 16 MHz PRF)
-//    dwm_write_sub_reg_32(0x2E, 0x18, 0x1607);     // Write to index 0x1806
-//
-//    // TX_POWER
-//    dwm_write_reg_32(0x1E, 0x0E082848);           // Was 0x1E080222
-//
-//    // RF_TXCTRL for Channel 5
-//    dwm_write_sub_reg_32(0x28, 0x0C, 0x1C071134); // Channel 5 setting
-//
-//    // TC_PGDELAY for Channel 5
-//    dwm_write_sub_reg_32(0x2A, 0x0B, 0xC0);       // Was 0xC5
-//
-//    // FS_PLLTUNE for Channel 5
-//    dwm_write_sub_reg_32(0x2B, 0x0B, 0x0BE);      // Was 0x46
-//
-//    // 3. Set channel to 5 (default, but explicit)
-//    // Channel control: 0x1F register
-//    // bits 0-3: TX channel (5 = 0b0101)
-//    // bits 4-7: RX channel (5 = 0b0101)
-//    dwm_write_reg_32(0x1F, 0x00000055);           // Channel 5
-//
-//    HAL_Delay(10); // Let everything settle
-//}
+
+//////////////////////////////////////////////////////////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+void dwm_read_reg(uint8_t reg_id, uint8_t *data, uint8_t len)
+{
+    uint8_t tx[1 + len];
+    uint8_t rx[1 + len];
+
+    tx[0] = reg_id & 0x3F;  // read, no sub-index
+    memset(&tx[1], 0, len);
+
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_SET);
+
+    memcpy(data, &rx[1], len);
+}
+
+
+void dwm_write_reg(uint8_t reg_id, uint8_t *data, uint8_t len)
+{
+    uint8_t tx[1 + len];
+
+    tx[0] = 0x80 | (reg_id & 0x3F);  // write bit = 1
+    memcpy(&tx[1], data, len);
+
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi1, tx, 1 + len, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_SET);
+}
+
+
+
+
+
+void dwm_write_reg_sub(uint8_t reg_id,
+                       uint16_t subaddr,
+                       uint8_t *data,
+                       uint16_t len)
+{
+    uint8_t header[3];
+    uint8_t header_len = 1;
+
+    // First header byte: write + reg ID
+    header[0] = 0x80 | (reg_id & 0x3F);
+
+    if (subaddr != 0xFFFF) {  // sentinel = no subaddr
+        header[0] |= 0x40;    // subaddress flag
+
+        header[1] = subaddr & 0x7F;
+        header_len = 2;
+
+        if (subaddr > 0x7F) {
+            header[1] |= 0x80;
+            header[2] = (subaddr >> 7) & 0xFF;
+            header_len = 3;
+        }
+    }
+
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_RESET);
+
+    HAL_SPI_Transmit(&hspi1, header, header_len, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(&hspi1, data, len, HAL_MAX_DELAY);
+
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_SET);
+}
+
+
+void dwm_read_reg_sub(uint8_t reg_id,
+                      uint16_t subaddr,
+                      uint8_t *data,
+                      uint16_t len)
+{
+    uint8_t header[3];
+    uint8_t header_len = 1;
+
+    // Base read header
+    header[0] = reg_id & 0x3F;
+
+    // Add sub-address if requested
+    if (subaddr != 0xFFFF) {   // sentinel: no subaddress
+        header[0] |= 0x40;     // sub-address flag
+
+        header[1] = subaddr & 0x7F;
+        header_len = 2;
+
+        if (subaddr > 0x7F) {
+            header[1] |= 0x80;           // extension flag
+            header[2] = subaddr >> 7;
+            header_len = 3;
+        }
+    }
+
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_RESET);
+
+    // Send header
+    HAL_SPI_Transmit(&hspi1, header, header_len, HAL_MAX_DELAY);
+
+    // Receive data
+    HAL_SPI_Receive(&hspi1, data, len, HAL_MAX_DELAY);
+
+    HAL_GPIO_WritePin(CS_N_GPIO_Port, CS_N_Pin, GPIO_PIN_SET);
+}
 
 
 
@@ -263,6 +348,8 @@ uint32_t dwm_read_sys_config(void)
 
 void dwm_reset(void)
 {
+
+
     HAL_GPIO_WritePin(DWM_RESET_N_GPIO_Port,
                       DWM_RESET_N_Pin,
                       GPIO_PIN_RESET);
@@ -274,7 +361,7 @@ void dwm_reset(void)
                       DWM_RESET_N_Pin,
                       GPIO_PIN_SET);
 
-    HAL_Delay(5);   // allow DW1000 time to boot
+    HAL_Delay(10);   // allow DW1000 time to boot
 }
 
 
@@ -315,37 +402,137 @@ void dwm_tx_test(void)
 }
 
 
+/*
+ * SPI lets u read more than the reg if octets do not match
+ */
+
+
+void modify_default_config(void){
+
+	//1. AGC Tune1 - 2 octets
+	uint8_t current_agc1_config[2] = {0};
+	dwm_read_reg_sub(0x23,0x04,current_agc1_config,2);
+
+	current_agc1_config[0] = 0x70;
+	current_agc1_config[1] = 0x88;
+
+	dwm_write_reg_sub(0x23,0x04,current_agc1_config,2);
+	dwm_read_reg_sub(0x23,0x04,current_agc1_config,2);
+
+
+	//2.AGC Tune2 (4 oct)
+	uint8_t new_agc2_config[4] = {0x07,0xa9,0x02,0x25};
+	dwm_write_reg_sub(0x23,0x0c,new_agc2_config,4);
+
+	//	//3. DRX_Tune_2 (4 oct)
+	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+	dwm_write_reg_sub(0x27,0x08,new_drx2_config,4);
+
+	//4. NTM
+	uint8_t lde_cfg_1[1] = {0};
+	dwm_read_reg_sub(0x2E,0x0806,lde_cfg_1,1);
+	lde_cfg_1[0] = (lde_cfg_1[0] & ~0x1F) | (0x0D & 0x1F);
+	dwm_write_reg_sub(0x2E,0x0806,lde_cfg_1,1);
+
+//	5.LDE Config 2
+	uint8_t lde_cfg_2[2] = {0x07,0x16};
+	dwm_write_reg_sub(0x2E,0x1806,lde_cfg_2,2);
+
+//	//6. Tx Power
+	uint8_t tx_power_ctrl[4] ={0x48,0x28,0x08,0x0e};
+	dwm_write_reg_sub(0x1E,0x00,tx_power_ctrl,4);
+
+
+//	7. RF_TXCTRL (3 oct)
+//	 DATASHEET_UNCLEAR (refer pg 153)
+//	 The data sheet says set 24 bits,  last oct is reserved and set to 0x00 but when reading it has 0xde, might have to set to 0x00 of issues
+	uint8_t rf_txctrl[3] = {0xe3,0x3f,0x1e};
+	dwm_write_reg_sub(0x28,0x0c,rf_txctrl,3);
+
+//	8.TC_PGDELAY (1 oct)
+	uint8_t tc_pgdelay[1] = {0xc0};
+	dwm_write_reg_sub(0x2A,0x0b,tc_pgdelay,1);
+
+//	9.PLL_TUNE (1 oct)
+	uint8_t fs_pll_tune[1] = {0xbe};
+	dwm_write_reg_sub(0x2b,0x0b,fs_pll_tune,1);
+
+//	10. LDE_LOAD
+	//NOTE: refer page 176 for ldeload instruction if waking up from sleep/deep sleep
+
+	//L1 - write to PMSC Control0 lower 16 bits
+	uint8_t pmsc_ctrl_0_lower_2_oct[2] = {0x01,0x03};
+	dwm_write_reg_sub(0x36, 0x00, pmsc_ctrl_0_lower_2_oct, 2);
+
+	//L2 - set OTP control LDELOAD bit (write entire reg)
+	uint8_t otp_control[2] = {0x00,0x80};
+	dwm_write_reg_sub(0x2d, 0x06, otp_control, 2);
+
+	//Wait 150us
+	HAL_Delay(1);
+
+	// L-3
+	uint8_t pmsc_ctrl_0_lower_2_oct_L3[2] = {0x00,0x02};
+	dwm_write_reg_sub(0x36, 0x00, pmsc_ctrl_0_lower_2_oct_L3, 2);
+
+
+// 10.LDO TUNE
+	//NOTE: can be skipped ig
+}
 
 
 
+void transmit(){
+	/*
+	 * 1. Write data in TX_BUFFER
+	 * 2. Set frame len + other details in TX_FCTRL
+	 * 3. Initialte using TXSTRT bit in SysCtrlReg (0x0D)
+	 *
+	 * NOTE: Cannot read from TxBuffer
+	 * WARNING: reafing TX_FCTRL also reads TX_BUFFER, so dont read it during actove tx
+	 *
+	 * TX_FCTRL
+	 * 		-TFLEN: frame len, payload length + 2 CRC bytes
+	 * 		-TFLE: extended mode - not needed
+	 * 		-TXBR: bit rate, default = 6.8Mbps
+	 * 		-TR: Transmit bit rate ( ig its not needed) its set to 1 by def DATASHEET_UNCLEAR
+	 * 		-TXPRF: Pulse repetion freq (default of 16Mhz is ok, must be grater than 4Mhz)
+	 * 		-TXPSR: preamble length
+	 * 		-NOTE - Modify premable length (TXPSR = 0b10, PE = 0b00) for preamble length of 1024
+	 * 		-NOTE - Receiver must match this
+	 *
+	 */
 
-//void dwm_reset(void)
-//{
-//    GPIO_InitTypeDef GPIO_InitStruct = {0};
-//
-//    /* Configure RSTn as open-drain output */
-//    GPIO_InitStruct.Pin = DWM_RESET_N_Pin;
-//    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
-//    GPIO_InitStruct.Pull = GPIO_NOPULL;
-//    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-//    HAL_GPIO_Init(DWM_RESET_N_GPIO_Port, &GPIO_InitStruct);
-//
-//    /* Drive reset low */
-//    HAL_GPIO_WritePin(DWM_RESET_N_GPIO_Port,
-//                      DWM_RESET_N_Pin,
-//                      GPIO_PIN_RESET);
-//
-//    /* Hold low ≥ 1 µs (datasheet minimum) */
-//    HAL_Delay(1);   // ms is fine
-//
-//    /* Release reset: open-drain HIGH = Hi-Z */
-//    HAL_GPIO_WritePin(DWM_RESET_N_GPIO_Port,
-//                      DWM_RESET_N_Pin,
-//                      GPIO_PIN_SET);
-//
-//    /* Allow DW1000 clocks + OTP to load */
-//    HAL_Delay(100);
-//}
+
+	// WRITE DATA TO TX BUFFER
+	uint8_t tx_data[4] ={0xAA,0xBB,0xCC,0xDD};
+	dwm_write_reg(0x09, tx_data, 4);
+
+	//SET FRAME LENGTH AND PREAMBLE LENGTH
+	uint8_t tx_frame_control[5] = {0};
+	dwm_read_reg(0x08, tx_frame_control, 5);
+	// fr_len = 4 + 2 =
+	// Set frame length
+	tx_frame_control[0] &= 0x80;
+	tx_frame_control[0] |= 6;
+	// Set TXPSR=10, PE=00
+	tx_frame_control[2] &= ~(0x3C);
+	tx_frame_control[2] |= (0b10 << 2);
+	dwm_write_reg(0x08, tx_frame_control, 5);
+
+
+	//TRASMIT
+	uint8_t sys_ctrl[4] = {0};
+	dwm_read_reg(0x0D, sys_ctrl, 4);
+	sys_ctrl[0] |= (1 << 1);
+	dwm_write_reg(0x0D, sys_ctrl, 4);
+
+
+
+}
+
+
+
 
 
 
@@ -392,11 +579,22 @@ int main(void)
   uint32_t id = dwm_read_reg_32(DEV_ID);
 
   int count = 0;
-  int run_count = 0;
-  int error_count = 0;
-  int tx_error_count = 0;
-  uint32_t sys_status = dwm_read_reg_32(SYS_STATUS);
-  uint32_t sys_config = 0;
+//  int run_count = 0;
+  int clk_pll_error_count = 0;
+  int txfrs_error_count = 0;
+//  uint32_t sys_status = dwm_read_reg_32(SYS_STATUS);
+//  uint32_t sys_config = 0;
+  uint8_t sys_status_reg_arr[5];
+
+  modify_default_config();
+
+  //set PLLLDT  bit high
+  uint8_t ec_ctrl_reg[4] = {0};
+  dwm_read_reg_sub(0x24,0x00,ec_ctrl_reg,4);
+  ec_ctrl_reg[0] = ec_ctrl_reg[0]|0x04;
+  dwm_write_reg_sub(0x24,0x00,ec_ctrl_reg,4);
+
+
 
 
   /* USER CODE END 2 */
@@ -409,37 +607,29 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-//    id = dwm_read_device_id();
-//    sys_status = dwm_read_sys_status();
-//    sys_config = dwm_read_sys_config();
-
-//    id = dwm_read_reg_32(0x00);
-//    sys_status = dwm_read_reg_32(0x04);
-//    sys_config = dwm_read_reg_32(0x0F);
-
     uint32_t sys_status = dwm_read_reg_32(SYS_STATUS);
 
+
+
+
     if(sys_status & 0x2000000){
-    	error_count++;
+			clk_pll_error_count++;
     }
     count++;
 
     uint32_t sys_status_idle = dwm_read_sys_state();
 
+//    dwm_tx_test();
+    transmit();
+    HAL_Delay(1);
 
-    dwm_tx_test();
-
-    uint32_t status_for_tx = dwm_read_reg_32(0x0F);
-//
-////    dwm_write_reg_32(0x0F, 0x00000080);
-//    if(!(status_for_tx & 0x80)){
-//    	tx_error_count++;
-//    }
-
-    HAL_Delay(10);
+    dwm_read_reg(0x0F, sys_status_reg_arr, 5);
+    sys_status = dwm_read_reg_32(SYS_STATUS);
 
 
-
+    if(!(sys_status_reg_arr[0]&0x80)){
+    	txfrs_error_count++;
+    }
 
 
 
