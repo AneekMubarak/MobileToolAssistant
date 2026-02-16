@@ -1,0 +1,22 @@
+# Build directories
+Debug/
+Release/
+
+# IDE settings
+.settings/
+.metadata/
+.project
+.cproject
+
+# Launch configurations
+*.launch
+
+# Generated files
+*.o
+*.d
+*.su
+*.elf
+*.bin
+*.hex
+*.map
+*.list
