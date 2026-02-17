@@ -1,0 +1,115 @@
+2026-02-17 00:00:00,104 [INFO] Gpio:278 - dependency for GPIO [I2C1, I2S3, RCC, SPI1, SYS, USB_OTG_FS]
+2026-02-17 00:00:32,432 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 987759384 Bytes (1073741824)
+2026-02-17 00:00:35,661 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 811711728 Bytes (1073741824)
+2026-02-17 00:00:37,602 [INFO] UtilMem:75 - End SaveConfig() Used Memory: 892978416 Bytes (1073741824)
+2026-02-17 00:00:37,985 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: SPI
+2026-02-17 00:00:37,985 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: FREERTOS
+2026-02-17 00:00:37,985 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: I2S
+2026-02-17 00:00:37,986 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: SYS
+2026-02-17 00:00:37,986 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: RCC
+2026-02-17 00:00:37,986 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: I2C
+2026-02-17 00:00:37,986 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: USB_OTG_FS
+2026-02-17 00:00:37,986 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: NVIC
+2026-02-17 00:00:37,986 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: USB_HOST
+2026-02-17 00:00:37,987 [INFO] BlockDiagram:2775 - set Specific Code input for plugin: GPIO
+2026-02-17 00:00:37,988 [INFO] CodeGenerator:892 - code generatio: config db path: C:\ST\STM32CubeIDE_1.19.0\STM32CubeIDE\plugins\com.st.stm32cube.common.mx_6.15.0.202507011659\\db\
+2026-02-17 00:00:37,998 [WARN] IP:2250 - I2C_Coeff_DF not found: check if there is a RefParameter without a condition.
+2026-02-17 00:00:37,998 [WARN] IP:2250 - Analog_Filter not found: check if there is a RefParameter without a condition.
+2026-02-17 00:00:38,132 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\license.tmp_save
+2026-02-17 00:00:38,343 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\license.tmp
+2026-02-17 00:00:38,411 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\gpio.tmp_save
+2026-02-17 00:00:38,540 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\gpio.tmp
+2026-02-17 00:00:38,623 [WARN] IPConfigManager:3238 - Warning: the RefConfig PWREx_EnableUSBVoltageDetector is not available in your config.xml file
+2026-02-17 00:00:38,630 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_vars.tmp_save
+2026-02-17 00:00:38,741 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_vars.tmp
+2026-02-17 00:00:38,744 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_inc.tmp_save
+2026-02-17 00:00:38,824 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_inc.tmp
+2026-02-17 00:00:38,828 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_HalInit.tmp_save
+2026-02-17 00:00:38,943 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_HalInit.tmp
+2026-02-17 00:00:38,946 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_Msp.tmp_save
+2026-02-17 00:00:39,063 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\usb_otg_fs_Msp.tmp
+2026-02-17 00:00:39,318 [INFO] Middleware:1452 - No code input for Bsp Dependency
+2026-02-17 00:00:39,325 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_inc.tmp_save
+2026-02-17 00:00:39,416 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_inc.tmp
+2026-02-17 00:00:39,420 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelInit.tmp_save
+2026-02-17 00:00:39,503 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelInit.tmp
+2026-02-17 00:00:39,506 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelStart.tmp_save
+2026-02-17 00:00:39,594 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelStart.tmp
+2026-02-17 00:00:39,598 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_typedefs.tmp_save
+2026-02-17 00:00:39,679 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_typedefs.tmp
+2026-02-17 00:00:39,682 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_vars.tmp_save
+2026-02-17 00:00:39,746 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_vars.tmp
+2026-02-17 00:00:39,748 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_pfp.tmp_save
+2026-02-17 00:00:39,810 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_pfp.tmp
+2026-02-17 00:00:39,813 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_obj_creat.tmp_save
+2026-02-17 00:00:39,870 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_obj_creat.tmp
+2026-02-17 00:00:39,876 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_default_thread.tmp_save
+2026-02-17 00:00:39,928 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_default_thread.tmp
+2026-02-17 00:00:39,932 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_threads.tmp_save
+2026-02-17 00:00:39,978 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_threads.tmp
+2026-02-17 00:00:39,999 [INFO] Middleware:1452 - No code input for Bsp Dependency
+2026-02-17 00:00:40,005 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_inc.tmp_save
+2026-02-17 00:00:40,055 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_inc.tmp
+2026-02-17 00:00:40,060 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelInit.tmp_save
+2026-02-17 00:00:40,110 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelInit.tmp
+2026-02-17 00:00:40,116 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelStart.tmp_save
+2026-02-17 00:00:40,167 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_kernelStart.tmp
+2026-02-17 00:00:40,170 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_typedefs.tmp_save
+2026-02-17 00:00:40,223 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_typedefs.tmp
+2026-02-17 00:00:40,227 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_vars.tmp_save
+2026-02-17 00:00:40,277 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_vars.tmp
+2026-02-17 00:00:40,281 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_pfp.tmp_save
+2026-02-17 00:00:40,351 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_pfp.tmp
+2026-02-17 00:00:40,358 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_obj_creat.tmp_save
+2026-02-17 00:00:40,432 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_obj_creat.tmp
+2026-02-17 00:00:40,437 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_default_thread.tmp_save
+2026-02-17 00:00:40,517 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_default_thread.tmp
+2026-02-17 00:00:40,522 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_threads.tmp_save
+2026-02-17 00:00:40,591 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\rtos_threads.tmp
+2026-02-17 00:00:40,597 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\FreeRTOSConfig.h_save
+2026-02-17 00:00:40,688 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\FreeRTOSConfig.h
+2026-02-17 00:00:40,693 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\freertos.c_save
+2026-02-17 00:00:40,770 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\freertos.c
+2026-02-17 00:00:40,793 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\App\usb_host.c_save
+2026-02-17 00:00:40,873 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\App\usb_host.c
+2026-02-17 00:00:40,880 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\App\usb_host.h_save
+2026-02-17 00:00:40,960 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\App\usb_host.h
+2026-02-17 00:00:40,966 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_conf.h_save
+2026-02-17 00:00:41,057 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_conf.h
+2026-02-17 00:00:41,064 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_conf.c_save
+2026-02-17 00:00:41,151 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_conf.c
+2026-02-17 00:00:41,158 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_platform.c_save
+2026-02-17 00:00:41,228 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_platform.c
+2026-02-17 00:00:41,232 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_platform.h_save
+2026-02-17 00:00:41,279 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\USB_HOST\Target\usbh_platform.h
+2026-02-17 00:00:41,289 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\stm32f4xx_it.c_save
+2026-02-17 00:00:41,396 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\stm32f4xx_it.c
+2026-02-17 00:00:41,400 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\stm32f4xx_it.h_save
+2026-02-17 00:00:41,440 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\stm32f4xx_it.h
+2026-02-17 00:00:41,451 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\stm32f4xx_hal_msp.c_save
+2026-02-17 00:00:41,534 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\stm32f4xx_hal_msp.c
+2026-02-17 00:00:41,537 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\system.tmp_save
+2026-02-17 00:00:41,577 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\MXTmpFiles\system.tmp
+2026-02-17 00:00:41,581 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\stm32f4xx_hal_timebase_tim.c_save
+2026-02-17 00:00:41,625 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\stm32f4xx_hal_timebase_tim.c
+2026-02-17 00:00:41,632 [INFO] CodeEngine:321 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\stm32f4xx_hal_conf.h_save
+2026-02-17 00:00:41,679 [INFO] CodeEngine:345 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\stm32f4xx_hal_conf.h
+2026-02-17 00:00:41,702 [INFO] ApiDbMcu:532 - Load IP Config File for I2C1
+2026-02-17 00:00:41,707 [INFO] ApiDbMcu:532 - Load IP Config File for I2S3
+2026-02-17 00:00:41,711 [INFO] ApiDbMcu:532 - Load IP Config File for SPI1
+2026-02-17 00:00:41,716 [INFO] ApiDbMcu:532 - Load IP Config File for RCC
+2026-02-17 00:00:41,725 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\main.h_save
+2026-02-17 00:00:41,810 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Inc\main.h
+2026-02-17 00:00:41,815 [INFO] CodeEngine:265 - oldGeneratedFile, E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\main.c_save
+2026-02-17 00:00:41,926 [INFO] CodeEngine:289 - Generated code: E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\Core\Src\main.c
+2026-02-17 00:00:42,241 [INFO] ProjectBuilder:3606 - Time for Copy HAL[1] : 150mS.
+2026-02-17 00:00:42,245 [INFO] ProjectBuilder:5216 - Project Generator version: 4.7.0-B52
+2026-02-17 00:00:42,308 [INFO] ConfigFileManager:1595 - The Die is : DIE413
+2026-02-17 00:00:42,310 [INFO] ApiDbMcu:532 - Load IP Config File for FATFS
+2026-02-17 00:00:42,312 [INFO] ApiDbMcu:532 - Load IP Config File for LIBJPEG
+2026-02-17 00:00:42,318 [INFO] ApiDbMcu:532 - Load IP Config File for LWIP
+2026-02-17 00:00:42,322 [INFO] ApiDbMcu:532 - Load IP Config File for MBEDTLS
+2026-02-17 00:00:42,329 [INFO] ApiDbMcu:532 - Load IP Config File for USB_DEVICE
+2026-02-17 00:00:43,306 [INFO] ProjectBuilder:5496 - Time for Generating toolchain IDE Files: 1061mS.
+2026-02-17 00:00:43,307 [INFO] ProjectBuilder:3463 - Time for Copy CMSIS : 0mS.
+2026-02-17 00:00:43,312 [INFO] ProjectBuilder:3463 - Time for Copy CMSIS : 0mS.
