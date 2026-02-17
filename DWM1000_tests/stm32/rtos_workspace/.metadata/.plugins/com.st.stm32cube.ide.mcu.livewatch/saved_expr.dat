@@ -1,2 +1,4 @@
 device_id
 test_counter
+device_id_low
+txfrs_error_count
