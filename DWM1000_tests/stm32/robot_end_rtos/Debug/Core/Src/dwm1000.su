@@ -1,0 +1,3 @@
+../Core/Src/dwm1000.c:16:6:dwm_reset	16	static
+../Core/Src/dwm1000.c:27:6:dwm_read_reg	88	dynamic
+../Core/Src/dwm1000.c:48:6:dwm_write_reg	56	dynamic

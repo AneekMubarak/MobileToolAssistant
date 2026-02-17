@@ -1,0 +1,29 @@
+00:19:58 **** Incremental Build of configuration Debug for project robot_end_rtos ****
+make -j8 all 
+arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
+../Core/Src/main.c: In function 'StartDefaultTask':
+../Core/Src/main.c:484:9: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+  484 |         printf("Hi\n");
+      |         ^~~~~~
+../Core/Src/main.c:27:1: note: include '<stdio.h>' or provide a declaration of 'printf'
+   26 | #include "dwm1000.h"
+  +++ |+#include <stdio.h>
+   27 | /* USER CODE END Includes */
+../Core/Src/main.c:484:9: warning: incompatible implicit declaration of built-in function 'printf' [-Wbuiltin-declaration-mismatch]
+  484 |         printf("Hi\n");
+      |         ^~~~~~
+../Core/Src/main.c:484:9: note: include '<stdio.h>' or provide a declaration of 'printf'
+arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+Finished building target: robot_end_rtos.elf
+ 
+arm-none-eabi-size  robot_end_rtos.elf 
+arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
+   text	   data	    bss	    dec	    hex	filename
+  54240	    156	  23180	  77576	  12f08	robot_end_rtos.elf
+Finished building: default.size.stdout
+ 
+Finished building: robot_end_rtos.list
+ 
+
+00:19:59 Build Finished. 0 errors, 2 warnings. (took 1s.93ms)
+
