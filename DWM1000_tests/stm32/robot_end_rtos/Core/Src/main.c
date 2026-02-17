@@ -61,6 +61,8 @@ const osThreadAttr_t defaultTask_attributes = {
 
 int test_counter = 0;
 uint8_t device_id[4] = {0};
+uint8_t device_id_low[2] = {0};
+int txfrs_error_count = 0;
 
 /* USER CODE END PV */
 
@@ -475,12 +477,33 @@ void StartDefaultTask(void *argument)
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
 //  uint8_t device_id[4] = {0};
+  uint8_t sys_event_status_reg[5] = {0};
+
+  uint8_t clear_tx[5] = {0};
+  clear_tx[0] = 0xF0;  // only TX bits
+
+
   dwm_reset(&dwm1);
+
+  dwm_configure(&dwm1);
   /* Infinite loop */
   for(;;)
   {
 	test_counter++;
 	dwm_read_reg(&dwm1, 0x00, device_id, 4);
+	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
+	dwm_basic_transmit(&dwm1);
+	HAL_Delay(10);
+	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
+    if(!(sys_event_status_reg[0]&0x80)){
+    	txfrs_error_count++;
+    }
+
+    //clear tx flags
+    dwm_write_reg(&dwm1, 0x0F, clear_tx, 5);
+	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
+
+
     osDelay(10);
   }
   /* USER CODE END 5 */
