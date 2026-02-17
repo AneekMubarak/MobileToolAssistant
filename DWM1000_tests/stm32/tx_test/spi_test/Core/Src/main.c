@@ -609,12 +609,9 @@ int main(void)
 
     uint32_t sys_status = dwm_read_reg_32(SYS_STATUS);
 
-
-
-
-    if(sys_status & 0x2000000){
-			clk_pll_error_count++;
-    }
+//    if(sys_status & 0x2000000){
+//			clk_pll_error_count++;
+//    }
     count++;
 
     uint32_t sys_status_idle = dwm_read_sys_state();

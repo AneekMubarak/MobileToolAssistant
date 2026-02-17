@@ -64,8 +64,8 @@ all: main-build
 main-build: spi_test.elf secondary-outputs
 
 # Tool invocations
-spi_test.elf spi_test.map: $(OBJS) $(USER_OBJS) E:\CME495_Capstone\myStm\spi_test\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "spi_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\CME495_Capstone\myStm\spi_test\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="spi_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+spi_test.elf spi_test.map: $(OBJS) $(USER_OBJS) E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\tx_test\spi_test\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "spi_test.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\tx_test\spi_test\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="spi_test.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
