@@ -24,6 +24,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "dwm1000.h"
+#include "VL53L1X_api.h"
+#include "VL53l1X_calibration.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -53,16 +56,31 @@ osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) 10,
 };
 /* USER CODE BEGIN PV */
-
+osThreadId_t tofTaskHandle;
+const osThreadAttr_t tofTask_attributes = {
+  .name = "tofTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) 5,
+};
 
 
 int test_counter = 0;
 uint8_t device_id[4] = {0};
 uint8_t device_id_low[2] = {0};
 int txfrs_error_count = 0;
+
+
+// TOF Sensor
+uint16_t dev = 0x52;   // I2C address (try 0x29 if this fails)
+uint8_t sensorState = 0;
+uint8_t dataReady = 0;
+uint16_t distance = 0;
+uint8_t rangeStatus = 0;
+int status = 0;
+
 
 /* USER CODE END PV */
 
@@ -75,6 +93,7 @@ static void MX_SPI1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+void TimeOfFlighMeausure(void *argument);
 
 /* USER CODE END PFP */
 
@@ -141,6 +160,29 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+
+  //TOF BEGIN
+  // Wait for sensor boot
+// while (sensorState == 0)
+//  {
+//      status = VL53L1X_BootState(dev, &sensorState);
+//      HAL_Delay(2);
+//  }
+//
+//  // Initialize sensor
+//  status = VL53L1X_SensorInit(dev);
+//
+//  // Configure ranging
+//  status = VL53L1X_SetDistanceMode(dev, 1);      // 1=short, 2=long
+//  status = VL53L1X_SetTimingBudgetInMs(dev, 100);
+//  status = VL53L1X_SetInterMeasurementInMs(dev, 100);
+//
+//  status = VL53L1X_StartRanging(dev);
+
+  //TOF END
+
+
+
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -168,6 +210,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  tofTaskHandle = osThreadNew(TimeOfFlighMeausure, NULL, &tofTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -460,7 +503,41 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void TimeOfFlighMeausure(void *argument) {
 
+	 while (sensorState == 0){
+		 status = VL53L1X_BootState(dev, &sensorState);
+		 HAL_Delay(2);
+	  }
+
+	  // Initialize sensor
+	 status = VL53L1X_SensorInit(dev);
+	  // Configure ranging
+	 status = VL53L1X_SetDistanceMode(dev, 1);      // 1=short, 2=long
+	 status = VL53L1X_SetTimingBudgetInMs(dev, 100);
+	 status = VL53L1X_SetInterMeasurementInMs(dev, 100);
+	 status = VL53L1X_StartRanging(dev);
+
+	for(;;){
+		// tof
+		while (dataReady == 0) {
+			VL53L1X_CheckForDataReady(dev, &dataReady);
+			HAL_Delay(1);
+		}
+
+		dataReady = 0;
+
+		// Read distance
+		VL53L1X_GetDistance(dev, &distance);
+		VL53L1X_GetRangeStatus(dev, &rangeStatus);
+
+		// Clear interrupt
+		VL53L1X_ClearInterrupt(dev);
+
+	    osDelay(5);
+
+	}
+}
 
 /* USER CODE END 4 */
 
@@ -495,9 +572,13 @@ void StartDefaultTask(void *argument)
 	dwm_basic_transmit(&dwm1);
 	HAL_Delay(10);
 	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
+
     if(!(sys_event_status_reg[0]&0x80)){
     	txfrs_error_count++;
     }
+
+	HAL_Delay(500);
+
 
     //clear tx flags
     dwm_write_reg(&dwm1, 0x0F, clear_tx, 5);

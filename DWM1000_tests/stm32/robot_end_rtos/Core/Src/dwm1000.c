@@ -75,10 +75,8 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
     }
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-
     HAL_SPI_Transmit(&hspi1, header, header_len, HAL_MAX_DELAY);
     HAL_SPI_Transmit(&hspi1, data, len, HAL_MAX_DELAY);
-
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 }
 
@@ -167,6 +165,7 @@ void dwm_configure(DWM_Module* module){
 	uint8_t fs_pll_tune[1] = {0xbe};
 	dwm_write_reg_sub(module, 0x2b,0x0b,fs_pll_tune,1);
 
+
 //	10. LDE_LOAD
 	//NOTE: refer page 176 for ldeload instruction if waking up from sleep/deep sleep
 
@@ -220,6 +219,7 @@ void dwm_basic_transmit(DWM_Module* module){
 	 * 		-NOTE - Receiver must match this
 	 *
 	 */
+
 
 
 	// WRITE DATA TO TX BUFFER
