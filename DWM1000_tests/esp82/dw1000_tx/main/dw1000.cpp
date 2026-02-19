@@ -175,7 +175,10 @@ void dwm_configure(DWM_Module* module){
 	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
 
 	//	//3. DRX_Tune_2 (4 oct)
-	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+	// uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+
+    // mofified PAC size=32 for 1024 preamble size
+    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
 	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
 
 	//4. NTM
@@ -277,13 +280,20 @@ void dwm_basic_transmit(DWM_Module* module){
 	//SET FRAME LENGTH AND PREAMBLE LENGTH
 	uint8_t tx_frame_control[5] = {0};
 	dwm_read_reg(module, 0x08, tx_frame_control, 5);
-	// fr_len = 4 + 2 =
+	// fr_len = 4 + 2 = 6
 	// Set frame length
-	tx_frame_control[0] &= 0x80;
-	tx_frame_control[0] |= 6;
+	tx_frame_control[0] &= 0x80; //clear
+	tx_frame_control[0] |= 6; //set
 	// Set TXPSR=10, PE=00
 	tx_frame_control[2] &= ~(0x3C);
 	tx_frame_control[2] |= (0b10 << 2);
+
+    // Set bitrate to 850kbps (Comment the blwow linesx for default of 6.8Mbps)
+    tx_frame_control[1] &= 0x9f; //clear
+    tx_frame_control[1] |= 0x20; //set to 850kpbs
+
+
+
 	dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
 
@@ -292,8 +302,17 @@ void dwm_basic_transmit(DWM_Module* module){
 	dwm_read_reg(module, 0x0D, sys_ctrl, 4);
 	sys_ctrl[0] |= (1 << 1);
 	dwm_write_reg(module, 0x0D, sys_ctrl, 4);
-
-
-
 }
 
+
+
+
+// Modifying data rate
+
+/*Def  = 6.8Mbs
+but for longer range it needs to be reduced (110 or 850 kbps)
+
+TX_FCTRL TXBR bits must be set to 0b00(110 kbps) 0r 0b01(850kbps)
+SYS_CFG  bit RXM110K must be 1 if using 110 kbps else leave 0
+
+*/

@@ -66,7 +66,7 @@ void loop(){
 
     printRegHex(sys_event_status_reg,5,"System Even Status Reg Before Transmit");
 
-    delay(5000);
+    delay(100);
 
     sys_ctrl[1] |= (1 << 0); // RXENAB
     dwm_write_reg(&dwm1, 0x0D, sys_ctrl, 4);
