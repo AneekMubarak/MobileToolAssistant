@@ -225,7 +225,7 @@ void dwm_configure(DWM_Module* module){
 	dwm_write_reg_sub(module, 0x2d, 0x06, otp_control, 2);
 
 	//Wait 150us
-	delay(5);
+	delay(1);
 
 	// L-3
 	uint8_t pmsc_ctrl_0_lower_2_oct_L3[2] = {0x00,0x02};
