@@ -22,5 +22,6 @@ void dwm_basic_transmit(DWM_Module *module);
 
 void printRegHex(uint8_t* data, size_t len, const char* info);
 
+bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len);
 
 #endif

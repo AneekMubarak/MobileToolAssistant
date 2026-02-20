@@ -1,4 +1,6 @@
+#include "HardwareSerial.h"
 #include "dw1000.h"
+#include <cstdint>
 #define SPI_SPEED_MAX 20000000
 //old 20000000 
 static uint32_t dw_spi_speed = 3000000; // 3 MHz safe init
@@ -302,6 +304,52 @@ void dwm_basic_transmit(DWM_Module* module){
 	dwm_read_reg(module, 0x0D, sys_ctrl, 4);
 	sys_ctrl[0] |= (1 << 1);
 	dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+}
+
+
+/*
+    buffer: buffer for message , use expected size
+    len: len of buffer array (octs)
+*/
+bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
+
+    uint8_t sys_event_status_reg[5] = {0};
+    uint8_t rx_frame_info_reg[4] = {0};
+    // uint8_t rx_buffer[6] = {0}; // tflen = 6 but the top2 crc bits can be ignored here
+    uint8_t sys_ctrl_reg[4] = {0};
+
+    int tflen = 0;
+
+
+    // ENABLE Rx
+    dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
+    sys_ctrl_reg[1] |= (1 << 0); // RXENAB
+
+    dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
+
+    // now dw1000 is waiting for preamble
+    // Add timeouts here ig
+    int tries = 10;
+    for (int i=0;i<=tries;i++){
+        dwm_read_reg(module, 0x0F, sys_event_status_reg, 5);
+
+        if(sys_event_status_reg[1]&0x20){ // RXDFR is high
+            dwm_read_reg(module, 0x10,rx_frame_info_reg,4);
+            tflen = rx_frame_info_reg[0]&0x7f; //tflen mask
+            dwm_read_reg(module, 0x11,buffer,tflen-2); // no need CRC bits --> write data to buffer
+            // PROBLEM: can corrupt mem if buff too small
+            // Better to come up with a standard tflen across all DWMs and set to max.
+            
+            return true;
+        }
+
+        delay(1);
+        i++;
+        Serial.println(i);
+    }
+
+    return false;
+
 }
 
 

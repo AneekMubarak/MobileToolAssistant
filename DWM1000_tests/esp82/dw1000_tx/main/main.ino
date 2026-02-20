@@ -1,5 +1,7 @@
 #include "dw1000.h"
 
+#define RX_BUFFER_SIZE 6
+
 DWM_Module dwm1 = { D8, D4 }; // CS=D8, RESET=D4
 
 void setup() {
@@ -44,10 +46,12 @@ void loop(){
 
     uint8_t sys_event_status_reg[5] = {0};
     uint8_t rx_frame_info_reg[4] = {0};
-    uint8_t rx_buffer[6] = {0}; // tflen = 6 but the top2 crc bits can be ignored here
+    
+    uint8_t rx_buffer[RX_BUFFER_SIZE] = {0}; // tflen = 8  top2 crc bits can be ignored here
 
 
-    //Txn
+
+    //Transmit
 	// dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
 
     // if(!(sys_event_status_reg[0]&0x80)){
@@ -56,49 +60,25 @@ void loop(){
 
     // clear_tx[0] = 0xF0;
     // dwm_write_reg(&dwm1, 0x0F, clear_tx, 5);
-    
-    
-    //Rxn
-	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
-
-    uint8_t sys_ctrl[4] = {0};
-    dwm_read_reg(&dwm1, 0x0D, sys_ctrl, 4);
-
-    printRegHex(sys_event_status_reg,5,"System Even Status Reg Before Transmit");
-
-    delay(100);
-
-    sys_ctrl[1] |= (1 << 0); // RXENAB
-    dwm_write_reg(&dwm1, 0x0D, sys_ctrl, 4);
+        
+    //Receive Data
+    if(!dwm_receive(&dwm1,rx_buffer,RX_BUFFER_SIZE)){
+        Serial.println("Message not received");
+    }
+    printRegHex(rx_buffer,RX_BUFFER_SIZE,"Received Data:");
 
 
-    for (int i = 0; i < 20 ;i++){
-        dwm_read_reg(&dwm1, 0x0F, sys_event_status_reg, 5);
-        printRegHex(sys_event_status_reg,5,"System Even Status Reg waiting....");
-	    delay(100);
 
-        if(sys_event_status_reg[1]&0x20){ // RXDFR is high
-                dwm_read_reg(&dwm1, 0x10,rx_frame_info_reg,4);
-                printRegHex(rx_frame_info_reg,4,"Rx Frame Info");
-                dwm_read_reg(&dwm1, 0x11,rx_buffer,6);
-                printRegHex(rx_buffer,4,"Rx Data"); //ignore CRC
-        }
-
-    }   
-	// delay(500);
-
-
-    //clear tx flags
-    // dwm_write_reg(&dwm1, 0x0F, clear_tx, 5);
-	// dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
 
     // Serial.print("Count: ");
     // Serial.println(test_counter);
-    printRegHex(device_id,4,"Device ID");
-    printRegHex(device_id_low,2,"Device ID Low");
+    // printRegHex(device_id,4,"Device ID");
+    // printRegHex(device_id_low,2,"Device ID Low");
     // Serial.print("Tx Error Count: ");
     // Serial.println(txfrs_error_count);
     // printRegHex(sys_event_status_reg,5,"System Even Status Reg");
+
+    // delay(10);
 
 
 
