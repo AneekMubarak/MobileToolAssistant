@@ -133,7 +133,9 @@ void dwm_configure(DWM_Module* module){
 	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
 
 	//	//3. DRX_Tune_2 (4 oct)
-	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+//	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+
 	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
 
 	//4. NTM
@@ -224,6 +226,8 @@ void dwm_basic_transmit(DWM_Module* module){
 
 	// WRITE DATA TO TX BUFFER
 	uint8_t tx_data[4] ={0xAA,0xBB,0xCC,0xDD};
+//	uint8_t tx_data[4] ={0xCA,0xAC,0x09,0xEF};
+
 	dwm_write_reg(module, 0x09, tx_data, 4);
 
 	//SET FRAME LENGTH AND PREAMBLE LENGTH
@@ -236,6 +240,12 @@ void dwm_basic_transmit(DWM_Module* module){
 	// Set TXPSR=10, PE=00
 	tx_frame_control[2] &= ~(0x3C);
 	tx_frame_control[2] |= (0b10 << 2);
+
+    // Set bitrate to 850kbps (Comment the blwow lines for default of 6.8Mbps)
+    tx_frame_control[1] &= 0x9f; //clear
+    tx_frame_control[1] |= 0x20; //set to 850kpbs
+
+
 	dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
 

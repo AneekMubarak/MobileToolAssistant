@@ -1,54 +1,41 @@
 #include <SPI.h>
 
-#define PIN_CS  D8
-#define PIN_RST D0
-
 void setup() {
-  Serial.begin(115200);
-  delay(2000);
-  
-  Serial.println("DW1000 Simple SPI Test");
-  
-  // Setup pins
-  pinMode(PIN_CS, OUTPUT);
-  pinMode(PIN_RST, OUTPUT);
-  digitalWrite(PIN_CS, HIGH);
-  
-  // Reset
-  digitalWrite(PIN_RST, LOW);
-  delay(10);
-  digitalWrite(PIN_RST, HIGH);
-  delay(50);
-  
-  // Initialize SPI
-  SPI.begin();
-  
-  // Try different frequencies
-  uint32_t frequencies[] = {1000000, 2000000, 500000, 250000};
-  
-  for (uint32_t freq : frequencies) {
-    SPI.beginTransaction(SPISettings(freq, MSBFIRST, SPI_MODE0));
-    
-    digitalWrite(PIN_CS, LOW);
-    SPI.transfer(0x00);  // Read device ID
-    
-    Serial.print(freq / 1000);
-    Serial.print(" kHz: ");
-    
-    uint8_t bytes[4];
-    for (int i = 0; i < 4; i++) {
-      bytes[i] = SPI.transfer(0x00);
-      if (bytes[i] < 0x10) Serial.print("0");
-      Serial.print(bytes[i], HEX);
-      Serial.print(" ");
-    }
-    
-    digitalWrite(PIN_CS, HIGH);
-    SPI.endTransaction();
-    
-    Serial.println();
-    delay(100);
-  }
+Serial.begin(115200);
+
+pinMode(D4, OUTPUT); // LED pin
+pinMode(D8, OUTPUT); // CS pin
+digitalWrite(D8, HIGH); // idle high
+
+SPI.begin(); // default: SCK=14, MISO=12, MOSI=13 (internal)
+
+
 }
 
-void loop() {}
+void loop() {
+
+uint8_t tx[5] = {0x00,0x00,0x00,0x00,0x00};
+uint8_t rx[5] = {0};
+
+digitalWrite(D4, LOW); // LED ON
+delay(200); // visible ON time
+
+SPI.beginTransaction(SPISettings(20000000, MSBFIRST, SPI_MODE0));
+
+digitalWrite(D8, LOW);
+
+for (int i = 0; i < 5; i++) {
+rx[i] = SPI.transfer(tx[i]);
+}
+
+digitalWrite(D8, HIGH);
+SPI.endTransaction();
+
+digitalWrite(D4, HIGH); // LED OFF
+uint32_t dev_id = rx[1] | (rx[2] << 8) | (rx[3] << 16) | (rx[4] << 24);
+
+Serial.print("Device ID: 0x");
+Serial.println(dev_id, HEX);
+delay(800);
+
+}
