@@ -1,0 +1,16 @@
+../Core/Src/VL53L1X/vl53l1_platform.c:63:5:_I2CWrite	1
+../Core/Src/VL53L1X/vl53l1_platform.c:78:5:_I2CRead	1
+../Core/Src/VL53L1X/vl53l1_platform.c:93:14:VL53L1_WriteMulti	3
+../Core/Src/VL53L1X/vl53l1_platform.c:112:14:VL53L1_ReadMulti	3
+../Core/Src/VL53L1X/vl53l1_platform.c:133:14:VL53L1_WrByte	2
+../Core/Src/VL53L1X/vl53l1_platform.c:150:14:VL53L1_WrWord	2
+../Core/Src/VL53L1X/vl53l1_platform.c:168:14:VL53L1_WrDWord	2
+../Core/Src/VL53L1X/vl53l1_platform.c:186:14:VL53L1_UpdateByte	2
+../Core/Src/VL53L1X/vl53l1_platform.c:200:14:VL53L1_RdByte	3
+../Core/Src/VL53L1X/vl53l1_platform.c:221:14:VL53L1_RdWord	3
+../Core/Src/VL53L1X/vl53l1_platform.c:246:14:VL53L1_RdDWord	3
+../Core/Src/VL53L1X/vl53l1_platform.c:271:14:VL53L1_GetTickCount	1
+../Core/Src/VL53L1X/vl53l1_platform.c:327:14:VL53L1_GetTimerFrequency	1
+../Core/Src/VL53L1X/vl53l1_platform.c:336:14:VL53L1_WaitMs	1
+../Core/Src/VL53L1X/vl53l1_platform.c:342:14:VL53L1_WaitUs	1
+../Core/Src/VL53L1X/vl53l1_platform.c:348:14:VL53L1_WaitValueMaskEx	11

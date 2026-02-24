@@ -19,6 +19,7 @@ RM := rm -rf
 -include Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Src/subdir.mk
 -include Drivers/STM32F4xx_HAL_Driver/Src/subdir.mk
 -include Core/Startup/subdir.mk
+-include Core/Src/VL53L1X/subdir.mk
 -include Core/Src/subdir.mk
 -include objects.mk
 
@@ -68,8 +69,8 @@ all: main-build
 main-build: robot_end_rtos.elf secondary-outputs
 
 # Tool invocations
-robot_end_rtos.elf robot_end_rtos.map: $(OBJS) $(USER_OBJS) E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+robot_end_rtos.elf robot_end_rtos.map: $(OBJS) $(USER_OBJS) C:\Users\ethan\Desktop\Programming\STM_stuff\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\ethan\Desktop\Programming\STM_stuff\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
