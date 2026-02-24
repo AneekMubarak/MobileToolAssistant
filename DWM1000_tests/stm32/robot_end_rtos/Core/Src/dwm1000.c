@@ -12,7 +12,10 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-
+/**
+ * Function description: Reset sequence for DWM1000
+ * @param module: pointer to struct (by reference) to DWM struct 
+ */
 void dwm_reset(DWM_Module *module) {
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
     HAL_Delay(1);  // 1 ms minimum
@@ -22,28 +25,40 @@ void dwm_reset(DWM_Module *module) {
     HAL_Delay(10); // Allow DW1000 to boot
 }
 
-
+/** 
+ * Function description: Register read sequence for DWM1000
+ * @param module: pointer to struct (by reference) to DWM struct 
+ * @param reg_id: ID of register to be accessed
+ * @param data: pointer to data to be rx'd or tx'd
+ * @param len: length of data bytes
+*/
 void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
-    uint8_t tx[1 + len];
+	uint8_t tx[1 + len];
     uint8_t rx[1 + len];
 
-    tx[0] = reg_id & 0x3F;
-
-    memset(&tx[1], 0, len);
+    tx[0] = reg_id & 0x3F; 
+	//in both the tx and rx cases, we only want the tx[0] or rx[0], tx[1:len] and rx[1:len] is dummy data
+    memset(&tx[1], 0, len); //pad with dummy bytes
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
     HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 
-    memcpy(data, &rx[1], len);
+    memcpy(data, &rx[1], len); //skip 1st byte to get actual response
 }
 
-
+/**
+ * Function descroption: Register write sequence for DWM1000
+ * @param module: pointer to struct (by reference) to DWM struct 
+ * @param reg_id: ID of register to be accessed
+ * @param data: pointer to data to be rx'd or tx'd
+ * @param len: length of data bytes
+ */
 void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
     uint8_t tx[1 + len];
-    tx[0] = 0x80 | (reg_id & 0x3F);
+    tx[0] = 0x80 | (reg_id & 0x3F); //setting write operation with no sub-addresses to follow
 
-    memcpy(&tx[1], data, len);
+    memcpy(&tx[1], data, len); //similar to before where 
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
     HAL_SPI_Transmit(&hspi1, tx, 1 + len, HAL_MAX_DELAY);
@@ -52,7 +67,14 @@ void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t le
 }
 
 
-
+/**
+ * Function description: Register for writing using sub-addressing
+ * @param module: pointer to struct (by reference) to DWM struct 
+ * @param reg_id: ID of register to be accessed
+ * @param subaddr: specifies what offset to write the data at
+ * @param data: pointer to data to be rx'd or tx'd
+ * @param len: length of data bytes 
+ */
 void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
 	uint8_t header[3];
@@ -80,14 +102,19 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 }
 
-
+/**
+ * Function description: Register for reading using sub-addressing
+ * @param module: pointer to struct (by reference) to DWM struct 
+ * @param reg_id: ID of register to be accessed
+ * @param subaddr: specifies what offset to read the data from
+ * @param data: pointer to data to be rx'd or tx'd
+ * @param len: length of data bytes 
+ */
 void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
 	uint8_t header[3];
     uint8_t header_len = 1;
-
-    header[0] = reg_id & 0x3F;
-
+    header[0] = reg_id & 0x3F;	
     if (subaddr != 0xFFFF) {
         header[0] |= 0x40;
 
@@ -115,6 +142,11 @@ void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8
     memcpy(data, rx + header_len, len);
 }
 
+
+/**
+ * Function description: Configuration for module
+ * @param module: pointer to struct (by reference) to DWM struct 
+ */
 void dwm_configure(DWM_Module* module){
 
 	//1. AGC Tune1 - 2 octets
@@ -132,8 +164,8 @@ void dwm_configure(DWM_Module* module){
 	uint8_t new_agc2_config[4] = {0x07,0xa9,0x02,0x25};
 	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
 
-	//	//3. DRX_Tune_2 (4 oct)
-	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+	//3. DRX_Tune_2 (4 oct)
+	uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
 	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
 
 	//4. NTM
@@ -142,11 +174,11 @@ void dwm_configure(DWM_Module* module){
 	lde_cfg_1[0] = (lde_cfg_1[0] & ~0x1F) | (0x0D & 0x1F);
 	dwm_write_reg_sub(module, 0x2E,0x0806,lde_cfg_1,1);
 
-//	5.LDE Config 2
+	//5.LDE Config 2
 	uint8_t lde_cfg_2[2] = {0x07,0x16};
 	dwm_write_reg_sub(module, 0x2E,0x1806,lde_cfg_2,2);
 
-//	//6. Tx Power
+	//6. Tx Power
 	uint8_t tx_power_ctrl[4] ={0x48,0x28,0x08,0x0e};
 	dwm_write_reg_sub(module, 0x1E,0x00,tx_power_ctrl,4);
 
@@ -199,6 +231,11 @@ void dwm_configure(DWM_Module* module){
 
 }
 
+
+/**
+ * Function description: Basic transmit sequence
+ * @param module: pointer to struct (by reference) to DWM struct 
+ */
 void dwm_basic_transmit(DWM_Module* module){
 	/*
 	 * 1. Write data in TX_BUFFER
@@ -236,6 +273,9 @@ void dwm_basic_transmit(DWM_Module* module){
 	// Set TXPSR=10, PE=00
 	tx_frame_control[2] &= ~(0x3C);
 	tx_frame_control[2] |= (0b10 << 2);
+
+	tx_frame_control[1] &= 0x9f;
+	tx_frame_control[1] |= 0x20;
 	dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
 
