@@ -51,14 +51,24 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim3;
+
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) 10,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
+
+osThreadId_t motorTaskHandle;
+const osThreadAttr_t motorTask_attributes = {
+  .name = "motorTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) 4,
+};
+
 osThreadId_t tofTaskHandle;
 const osThreadAttr_t tofTask_attributes = {
   .name = "tofTask",
@@ -90,10 +100,12 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_TIM3_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
 void TimeOfFlighMeausure(void *argument);
+void MotorPulseTask(void *argument);
 
 /* USER CODE END PFP */
 
@@ -158,6 +170,7 @@ int main(void)
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -211,6 +224,8 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   tofTaskHandle = osThreadNew(TimeOfFlighMeausure, NULL, &tofTask_attributes);
+  motorTaskHandle = osThreadNew(MotorPulseTask, NULL, &motorTask_attributes);
+
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -229,6 +244,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+
   }
   /* USER CODE END 3 */
 }
@@ -385,6 +401,68 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+	// Start PWM on TIM3 CH1..CH4
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 83;
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+  HAL_TIM_MspPostInit(&htim3);
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -503,6 +581,80 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+
+
+
+// TIM3 period is 999 in your config => duty range 0..999
+#define PWM_MAX 999
+
+static inline uint16_t clamp_pwm(uint16_t pwm)
+{
+  return (pwm > PWM_MAX) ? PWM_MAX : pwm;
+}
+
+// Motor A (PB4=CH1 forward, PB5=CH2 reverse)
+static void MotorA_Forward(uint16_t pwm)
+{
+  pwm = clamp_pwm(pwm);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwm); // PB4
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);   // PB5 off
+}
+
+static void MotorA_Stop(void)
+{
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+}
+
+// Motor B (PC8=CH3 forward, PC9=CH4 reverse)
+static void MotorB_Forward(uint16_t pwm)
+{
+  pwm = clamp_pwm(pwm);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pwm); // PC8
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);   // PC9 off
+}
+
+static void MotorB_Stop(void)
+{
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);
+}
+
+void MotorPulseTask(void *argument)
+{
+  // Start PWM AFTER TIM3 is fully initialized (this is safe here)
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); // PB4
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // PB5
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // PC8
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // PC9
+
+  // Ensure stopped
+  MotorA_Stop();
+  MotorB_Stop();
+
+  const uint16_t pwm = 600;      // 0..999
+  const uint32_t on_ms  = 2000;  // spin time
+  const uint32_t off_ms = 1000;  // stop time
+
+  for (;;)
+  {
+    // Spin both motors "forward" (as you wired it)
+    MotorA_Forward(pwm);
+    MotorB_Forward(pwm);
+    osDelay(on_ms);
+
+    // Stop both
+    MotorA_Stop();
+    MotorB_Stop();
+    osDelay(off_ms);
+  }
+}
+
+
+
+
+
 void TimeOfFlighMeausure(void *argument) {
 
 	 while (sensorState == 0){

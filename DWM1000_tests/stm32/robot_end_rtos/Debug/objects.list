@@ -1,3 +1,6 @@
+"./Core/Src/VL53L1X/VL53L1X_api.o"
+"./Core/Src/VL53L1X/VL53L1X_calibration.o"
+"./Core/Src/VL53L1X/vl53l1_platform.o"
 "./Core/Src/dwm1000.o"
 "./Core/Src/freertos.o"
 "./Core/Src/main.o"
