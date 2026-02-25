@@ -1,4 +1,7 @@
 device_id
 test_counter
 device_id_low
+dwm_distance
+rx_buffer
+robot_state
 txfrs_error_count

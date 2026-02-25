@@ -137,6 +137,9 @@ void Error_Handler(void);
 #define MEMS_INT2_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
+#define DW_NSS_GPIO_Port GPIOA
+#define DW_NSS_Pin GPIO_PIN_1
+
 
 /* USER CODE END Private defines */
 
