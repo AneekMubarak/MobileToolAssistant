@@ -47,10 +47,8 @@ typedef struct {
 // } remote_session_t;
 
 typedef enum {
-    REMOTE_WAIT_M1 = 0,
-    REMOTE_SEND_M2,
-    REMOTE_WAIT_M3,
-    REMOTE_SEND_M4
+    REMOTE_WAIT_M1,
+    REMOTE_SEND_M2
 } remote_state_t;
 
 extern  int retry_counter;
@@ -75,7 +73,7 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len);
 
 // uint64_t start_ranging(DWM_Module* module);
 
-void run_remote(DWM_Module* module);
+void run(DWM_Module* module, volatile bool* isr_flag);
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len);
 
 

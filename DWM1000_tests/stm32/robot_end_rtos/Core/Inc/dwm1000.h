@@ -11,6 +11,7 @@
 #include "main.h"
 #include <stdint.h>
 #include <string.h>  // --> for memcpy
+#include <stdbool.h>
 
 //DWM Module Structure
 typedef struct {
@@ -20,6 +21,12 @@ typedef struct {
     uint16_t reset_pin;
 } DWM_Module;
 
+typedef enum {
+    ROBOT_SEND_POLL,
+    ROBOT_WAIT_RESP,
+    ROBOT_SEND_FINAL,
+    ROBOT_WAIT_ACK
+} robot_state_t;
 
 
 void dwm_reset(DWM_Module *module);
@@ -31,7 +38,7 @@ void dwm_reset(DWM_Module *module);
  * @param data Buffer to store the read data
  * @param len Number of bytes to read
  */
-void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len);
+void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len);
 
 /**
  * @brief Write data to a register of the DWM module.
@@ -61,6 +68,23 @@ void dwm_configure(DWM_Module* module);
 
 
 void dwm_basic_transmit(DWM_Module* module);
+
+///uint64_t robot_receive_response(DWM_Module* module);
+//uint64_t robot_send_final(DWM_Module* module);
+
+//bool dwm_wait_for_response(DWM_Module* module,uint8_t* buffer,uint16_t max_len,uint32_t timeout_ms,uint64_t* t4_out);
+
+//uint64_t dwm_get_distance(DWM_Module* module);
+bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len);
+
+int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len);
+void robot_uwb_task(DWM_Module* module);
+
+
+
+
+void start_ranging(DWM_Module* module);
+
 
 
 
