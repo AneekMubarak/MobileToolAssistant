@@ -497,4 +497,3 @@ void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
     }
 }
 
-

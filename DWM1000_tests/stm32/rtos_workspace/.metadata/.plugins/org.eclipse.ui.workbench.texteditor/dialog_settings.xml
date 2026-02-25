@@ -3,21 +3,21 @@
 	<item key="hasShownOverlayPopupBefore" value="true"/>
 	<item key="replaceBarOpen" value="false"/>
 	<list key="searchhistory">
+		<item value="HAL_Delay"/>
+		<item value="HAL_"/>
+		<item value="t_prop"/>
+		<item value="rx_buffer"/>
+		<item value="tx_frame_control"/>
 		<item value="buf"/>
 		<item value="huart2"/>
 		<item value="uart"/>
 		<item value="/* USER CODE BEGIN 4 */&#x0A;"/>
 		<item value="write"/>
-		<item value="HAL_Delay"/>
 		<item value="dwm_receive"/>
 		<item value="issue"/>
 		<item value="buffer"/>
 		<item value="dwm_wait_for_response"/>
 		<item value="tx_data"/>
-		<item value="sys_event_status_reg"/>
-		<item value="DWM"/>
-		<item value="port.h"/>
-		<item value="spi"/>
 	</list>
 	<list key="replacehistory">
 		<item value="DWMRangeTaskHandle"/>

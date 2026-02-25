@@ -608,7 +608,7 @@ void StartDefaultTask(void *argument)
   /* init code for USB_HOST */
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
-//  uint8_t device_id[4] = {0};
+  uint8_t device_id[4] = {0};
 //  uint8_t sys_event_status_reg[5] = {0};
 
   uint8_t clear_tx[5] = {0};
