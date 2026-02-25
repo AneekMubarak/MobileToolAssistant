@@ -79,8 +79,8 @@ uint64_t poll_ts = 0;
 uint8_t rx_buffer[4] = {0};
 uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
 
-uint64_t t_reply = 0;
-
+uint64_t uwb_dist_cm = 0;
+uint64_t t_prop = 0;
 
 // TOF Sensor
 uint16_t dev = 0x52;   // I2C address (try 0x29 if this fails)
@@ -634,7 +634,7 @@ void StartDefaultTask(void *argument)
 //		txfrs_error_count++;
 //	}
 
-	start_ranging(&dwm1,&t_reply);
+	start_ranging(&dwm1,&uwb_dist_cm,&t_prop);
 
 //	uint8_t rx_buffer[4];
 //	dwm_receive(&dwm1, rx_buffer, 4);

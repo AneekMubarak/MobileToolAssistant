@@ -84,7 +84,7 @@ void robot_uwb_task(DWM_Module* module);
 
 bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
 
-void start_ranging(DWM_Module* module, uint64_t* t_reply_p);
+void start_ranging(DWM_Module* module, uint64_t* t_reply_p,uint64_t* t_prop);
 
 
 uint64_t ts_diff(uint64_t a, uint64_t b);

@@ -378,11 +378,11 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
         if(sys_event_status_reg[1]&0x20){ // RXDFR is high
             dwm_read_reg(module, 0x10,rx_frame_info_reg,4);
             tflen = rx_frame_info_reg[0]&0x7f; //tflen mask
-            Serial.print("Does this work??");
+            // Serial.print("Does this work??");
             dwm_read_reg(module, 0x11,buffer,tflen-2); // no need CRC bits --> write data to buffer
             // PROBLEM: can corrupt mem if buff too small
             // Better to come up with a standard tflen across all DWMs and set to max. --> DONE
-            Serial.print("Does this work tooooo ??");
+            // Serial.print("Does this work tooooo ??");
 
             // clear flags
             uint8_t clear[5] = {0};
@@ -442,7 +442,7 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     delayMicroseconds(500); // this is not an issue bcs this happens after sending a frame, t_remote will be unaffected
     dwm_read_reg(module, 0x0f, sys_event_status_reg, 5);
     if(!(sys_event_status_reg[0]&0x80)){
-    	Serial.println("No Send");
+    	// Serial.println("No Send");
         return 0;
     }
 
@@ -512,7 +512,7 @@ void run(DWM_Module* module, volatile bool* isr_flag)
 
             // Read SYS_STATUS
             dwm_read_reg(module, 0x0F, sys_status, 5);
-            Serial.println("Received Message");
+            // Serial.println("Received Message");
 
             // clear everythig
             dwm_write_reg(module, 0x0F, sys_status, 5);
@@ -526,32 +526,27 @@ void run(DWM_Module* module, volatile bool* isr_flag)
             if(rxdfr && rxfcg && ldedone)
             {
                 // Read frame length
-                dwm_read_reg(module, 0x10, frame_info, 4);
-                uint16_t tflen = frame_info[0] & 0x7F;
+                // dwm_read_reg(module, 0x10, frame_info, 4);
+                // uint16_t tflen = frame_info[0] & 0x7F;
 
                 // Read payload (exclude CRC)
-                if(tflen >= 2)
-                    dwm_read_reg(module, 0x11, rx_buffer, tflen - 2);
+                // if(tflen >= 2)
+                //     dwm_read_reg(module, 0x11, rx_buffer, tflen - 2);
 
                 // Clear RXDFR flag
                 uint8_t clear[5] = {0};
                 clear[1] = 0x20;
                 dwm_write_reg(module, 0x0F, clear, 5);
-
-                //enable receiver
-                // uint8_t sys_ctrl[4] = {0};
-                // dwm_read_reg(module, 0x0D, sys_ctrl, 4);
-                // sys_ctrl[1] |= (1 << 0);   // RXENAB
-                // dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+;
 
                 // save timestamp
                 t_rx_m1 = read_timestamp(module,0x15);
-                Serial.print("Timestamp Rx: ");
-                Serial.println(t_rx_m1);               
+                // Serial.print("Timestamp Rx: ");
+                // Serial.println(t_rx_m1);               
 
                 remote_state = REMOTE_SEND_M2;
             }else {
-                Serial.println("MESSAGE CORRUPTED");
+                // Serial.println("MESSAGE CORRUPTED");
             }
         }else{
             // Serial.print("MESSAGE NOT RECEIVED");
@@ -612,6 +607,7 @@ void run(DWM_Module* module, volatile bool* isr_flag)
         {
             
             *isr_flag = false;
+            Serial.println("Response Transmitted");
 
             uint8_t sys_status[5] = {0};
             dwm_read_reg(module, 0x0F, sys_status, 5);
@@ -620,7 +616,7 @@ void run(DWM_Module* module, volatile bool* isr_flag)
 
             if (txfrs)
             {
-                Serial.println("Response Transmitted Successfully");
+                // Serial.println("Response Transmitted Successfully");
                 // Clear TXFRS
                 uint8_t clear[5] = {0};
                 clear[0] = 0x80;
@@ -737,4 +733,3 @@ void run(DWM_Module* module, volatile bool* isr_flag)
 
 //     }
 // }
-

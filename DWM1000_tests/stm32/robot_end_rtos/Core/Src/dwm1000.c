@@ -22,6 +22,8 @@ static robot_state_t robot_state = ROBOT_SEND_POLL;
 static uint8_t retries = 0;
 #define MAX_RETRIES 3
 
+#define ANTENNA_DELAY 32000ULL
+
 
 
 void dwm_reset(DWM_Module *module) {
@@ -426,7 +428,7 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 
 
 
- start_ranging(DWM_Module* module, uint64_t* distance){
+void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
 
     static int receive = 0;
     static int sent = 0;
@@ -472,10 +474,20 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 //    	uint64_t t_prop = 0.5*(t_rtt - t_reply);
 //    	uint64_t t_prop = (t_rtt - t_reply) >> 1;
     	if (t_rtt > t_reply) {
-    	    uint64_t t_prop = (t_rtt - t_reply) >> 1;
+    	    *t_prop = (t_rtt - t_reply) >> 1;
+
+    	    if (*t_prop > ANTENNA_DELAY)
+    	    {
+    	        *t_prop -= ANTENNA_DELAY;
+    	    }
 //    	    distance_cm = (t_prop * 469176) / 1000000;
-    	    distance_cm = (t_prop * 469176ULL) / 1000000ULL;
-    	    *distance = distance_cm;
+    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
+    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
+//    	    *distance = distance_cm;
+
+    	    uint64_t offset = 360;
+    	    *distance = distance_cm-offset;;
+
     	}
 
 
@@ -484,6 +496,5 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
         receive = 0;
     }
 }
-
 
 

@@ -80,8 +80,8 @@ uint8_t sys_status[5] = {0};
 void loop(){
 
 
-    test_counter++;
-	dwm_read_reg(&dwm1, 0x00, device_id, 4);
+    // test_counter++;
+	// dwm_read_reg(&dwm1, 0x00, device_id, 4);
     // printRegHex(device_id,4,"device_id");
     // Main Remote Function
     run(&dwm1,&dw_event);
