@@ -1,7 +1,32 @@
+#include "core_esp8266_features.h"
+#include <stdint.h>
 #include "HardwareSerial.h"
 #include "dw1000.h"
 #include <cstdint>
+#include "dwm_regs.h"
+
 #define SPI_SPEED_MAX 20000000
+
+#define MSG_TYPE_POLL 0xA1
+#define MSG_TYPE_RESPONSE 0xB2
+#define MSG_TYPE_FINAL 0xA2
+
+#define FRAME_LEN_MAX 127 // for received frame
+static uint8_t rx_buffer[FRAME_LEN_MAX];
+static uint32_t status_reg = 0;
+static uint16_t frame_len = 0;
+
+static remote_state_t remote_state = REMOTE_WAIT_M1;
+static uint64_t t_rx_m1 = 0;
+static uint64_t t_tx_m2 = 0;
+static uint64_t t_rx_m3 = 0;
+
+int retry_counter = 0;
+#define MAX_RETRIES 3
+
+
+
+
 //old 20000000 
 static uint32_t dw_spi_speed = 3000000; // 3 MHz safe init
 
@@ -26,25 +51,29 @@ void dwm_reset(DWM_Module *module) {
 
 }
 
+/*
+reg_id = register id 
+len = no of octets in register (bytes)
+*/
 
-void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
-    uint8_t tx[1 + len];
-    uint8_t rx[1 + len];
-
-    tx[0] = reg_id & 0x3F;
-    memset(&tx[1], 0, len);
+void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len)
+{
+    uint8_t header = reg_id & 0x3F;
 
     SPI.beginTransaction(SPISettings(dw_spi_speed, MSBFIRST, SPI_MODE0));
-    delay(5);
     digitalWrite(module->cs_pin, LOW);
-    for (int i = 0; i < 1 + len; i++) {
-        rx[i] = SPI.transfer(tx[i]);
+
+    SPI.transfer(header);
+
+    for (uint16_t i = 0; i < len; i++) {
+        data[i] = SPI.transfer(0x00);
     }
+
     digitalWrite(module->cs_pin, HIGH);
     SPI.endTransaction();
-
-    memcpy(data, &rx[1], len);
 }
+
+
 
 void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
@@ -66,11 +95,6 @@ void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8
         }
     }
 
-    //combine header + dummy
-    // uint8_t tx[header_len + len];
-    // uint8_t rx[header_len + len];
-
-    //start SPI trans
     SPI.beginTransaction(SPISettings(dw_spi_speed, MSBFIRST, SPI_MODE0));
     digitalWrite(module->cs_pin, LOW);
 
@@ -88,16 +112,19 @@ void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8
 }
 
 
-void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
-    uint8_t tx[1 + len];
-    tx[0] = 0x80 | (reg_id & 0x3F);
-    memcpy(&tx[1], data, len);
+void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len) {
+
+    uint8_t header = 0x80 | (reg_id & 0x3F);
 
     SPI.beginTransaction(SPISettings(dw_spi_speed, MSBFIRST, SPI_MODE0));
     digitalWrite(module->cs_pin, LOW);
-    for (int i = 0; i < 1 + len; i++) {
-        SPI.transfer(tx[i]);
+
+    SPI.transfer(header);
+
+    for (int i = 0; i < len; i++) {
+        SPI.transfer(data[i]);
     }
+
     digitalWrite(module->cs_pin, HIGH);
     SPI.endTransaction();
 }
@@ -149,6 +176,7 @@ void printRegHex(uint8_t* data, size_t len, const char* info = "") {
         Serial.print(": ");
     }
 
+    // in the buffer --> lsbs of the register are in lower indexes 
     for (int i = (int)len - 1; i >= 0; i--) {
         if (data[i] < 0x10) Serial.print("0"); // pad single hex digits
         Serial.print(data[i], HEX);
@@ -308,8 +336,9 @@ void dwm_basic_transmit(DWM_Module* module){
 
 
 /*
-    buffer: buffer for message , use expected size
+    buffer: buffer for message , use expected size (only payload no CRC)
     len: len of buffer array (octs)
+    timeout of 50ms, will return false in that case
 */
 bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
 
@@ -329,28 +358,36 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
 
     // now dw1000 is waiting for preamble
     // Add timeouts here ig
-    int tries = 10;
+    int tries = 500;
     for (int i=0;i<=tries;i++){
         dwm_read_reg(module, 0x0F, sys_event_status_reg, 5);
 
         if(sys_event_status_reg[1]&0x20){ // RXDFR is high
             dwm_read_reg(module, 0x10,rx_frame_info_reg,4);
             tflen = rx_frame_info_reg[0]&0x7f; //tflen mask
+            Serial.print("Does this work??");
             dwm_read_reg(module, 0x11,buffer,tflen-2); // no need CRC bits --> write data to buffer
             // PROBLEM: can corrupt mem if buff too small
-            // Better to come up with a standard tflen across all DWMs and set to max.
-            
+            // Better to come up with a standard tflen across all DWMs and set to max. --> DONE
+            Serial.print("Does this work tooooo ??");
+
+            // clear flags
+            uint8_t clear[5] = {0};
+            clear[0] = 0x80;  // TXFRS
+            dwm_write_reg(module, 0x0F, clear, 5);
+
+
             return true;
         }
 
         delay(1);
-        i++;
-        Serial.println(i);
+        // Serial.println(i);
     }
 
     return false;
 
 }
+
 
 
 // Modifying data rate
@@ -362,6 +399,39 @@ TX_FCTRL TXBR bits must be set to 0b00(110 kbps) 0r 0b01(850kbps)
 SYS_CFG  bit RXM110K must be 1 if using 110 kbps else leave 0
 
 */
+
+
+int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
+{
+    // write to TX buffer
+    dwm_write_reg(module, 0x09, payload, len);
+
+    // configure TX_FCTRL
+    uint8_t tx_frame_control[5] = {0};
+    dwm_read_reg(module, 0x08, tx_frame_control, 5);
+
+    tx_frame_control[0] &= 0x80;
+    tx_frame_control[0] |= (len + 2); // include CRC
+
+    dwm_write_reg(module, 0x08, tx_frame_control, 5);
+
+    // trigger TX
+    uint8_t sys_ctrl[4] = {0};
+    dwm_read_reg(module, 0x0D, sys_ctrl, 4);
+    sys_ctrl[0] |= (1 << 1); // TXSTRT
+    dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+
+
+    uint8_t sys_event_status_reg[5] = {0};
+    dwm_read_reg(module, 0x0f, sys_event_status_reg, 5);
+
+    if(!(sys_event_status_reg[0]&0x80)){
+    	return 0;
+    }
+
+    return 1;
+}
+
 
 //______________________________________
 // DOUBLE SIDED TWO WAY RANGING 
@@ -382,9 +452,213 @@ uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
     return value;
 }
 
+
 uint64_t ts_diff(uint64_t a, uint64_t b)
 {
     //handle wraparound
     const uint64_t MASK = ((uint64_t)1 << 40) - 1;
     return (a - b) & MASK;
 }
+
+
+void run_remote(DWM_Module* module)
+{
+    uint8_t buffer[FRAME_LEN_MAX];
+    switch(remote_state)
+    {
+        case REMOTE_WAIT_M1: // this ones forever wait
+        {   
+            Serial.println("In State REMOTE_WAIT_M1");
+            if (dwm_receive(module, buffer, FRAME_LEN_MAX))
+            {
+                if (buffer[0] == MSG_TYPE_POLL) //0xA1
+                {
+                    Serial.println("REMOTE_WAIT_M1: Received Message");
+                    t_rx_m1 = read_timestamp(module, 0x15); // RX time
+                    remote_state = REMOTE_SEND_M2;
+                } else {
+                    Serial.println("REMOTE_WAIT_M1: Received Message of wrong type");
+                    printRegHex(buffer,10);
+
+                }
+            }
+            break;
+        }
+
+        case REMOTE_SEND_M2:
+        {
+            Serial.println("In State REMOTE_SEND_M2");
+            uint8_t resp[1] = { MSG_TYPE_RESPONSE }; //0xB2
+
+            int status = send_frame(module, resp, 1);
+            if(status){
+                t_tx_m2 = read_timestamp(module, 0x17); // TX time
+                // retry_counter = 0;
+                remote_state = REMOTE_WAIT_M3;
+                Serial.println("REMOTE_SEND_M2: Message sent");
+                delayMicroseconds(500);
+                break;
+            }
+            
+
+            break;
+        }
+
+        case REMOTE_WAIT_M3:
+        {
+            Serial.println("In State REMOTE_WAIT_M3");
+            if ((dwm_receive(module, buffer, FRAME_LEN_MAX)) && (buffer[0] == MSG_TYPE_FINAL))
+            {
+                // if (buffer[0] == MSG_TYPE_FINAL) //0xA3
+                // {
+                    Serial.println("REMOTE_WAIT_M3: Message received...");
+                    t_rx_m3 = read_timestamp(module, 0x15);
+                    remote_state = REMOTE_SEND_M4;
+                // }
+            }
+            else
+            {
+                Serial.println("REMOTE_WAIT_M3: Message not received. Retrying...");
+                // timeout occurred
+                if (retry_counter < MAX_RETRIES)
+                {
+                    Serial.println(retry_counter);
+                    retry_counter++;
+                    remote_state = REMOTE_SEND_M2;
+                }
+                else
+                {
+                    remote_state = REMOTE_WAIT_M1;
+                    retry_counter = 0;
+
+                }
+            }
+
+            break;
+        }
+
+        case REMOTE_SEND_M4:
+        {
+            Serial.println("In State REMOTE_SEND_M4");
+            uint8_t final_msg[1] = { 0xB4 }; 
+
+            send_frame(module, final_msg, 1);
+
+            // session complete
+            remote_state = REMOTE_WAIT_M1;
+
+            Serial.println("Session Complete");
+            break;
+        }
+    }
+}
+
+
+
+void remote_reset_session()
+{
+    retry_counter = 0;
+    t_rx_m1 = 0;
+    t_tx_m2 = 0;
+    t_rx_m3 = 0;
+
+    remote_state = REMOTE_WAIT_M1;
+}
+// Logic
+
+/*
+    STATE =  WAITING FOR M1
+        If received and MSG_ID = M1_ID
+            STATE = SEND_MESSAGE_M2
+        ELSE
+            state unchanged
+            But the robot will continue sending the wrong message type
+    
+
+
+    STATE = SEND M2
+        Change state to receive M3
+
+
+    SATE WAITING FOR M3
+        if timeout state = SEND M2(resend)
+        if (message received and ID matches)--> State = SEND_M4
+    
+    STATE SEND M4
+        send message (can use delayed tx here to send correct timestamp)
+        //send continously for some time ig, bcs state 1 waits for some time
+
+    
+    Is this a feasible schedule
+
+
+
+*/
+
+/*
+/*
+REMOTE / ROBOT FSM (Responder in DS-TWR)
+
+STATE = WAIT_M1
+--------------------------------
+- Enable RX and wait for packet
+- If packet received:
+    - If MSG_ID == M1_ID:
+        → STATE = SEND_M2
+    - Else:
+        Ignore packet
+        Stay in WAIT_M1
+- No transmission in this state
+
+
+STATE = SEND_M2
+--------------------------------
+- Capture RX timestamp of M1
+- Prepare M2 response
+- Transmit M2 (immediate or delayed TX)
+- Start M3 timeout timer
+- Retry counter = 0
+→ STATE = WAIT_M3
+
+
+STATE = WAIT_M3
+--------------------------------
+- Enable RX and wait for M3
+
+- If valid M3 received:
+    → STATE = SEND_M4
+
+- If timeout occurs:
+    - If retry_counter < MAX_RETRIES:
+        retry_counter++
+        → STATE = SEND_M2   // resend M2
+    - Else:
+        → STATE = WAIT_M1   // abort session
+
+
+STATE = SEND_M4
+--------------------------------
+- Compute timestamps
+- Send final message M4
+  (use delayed TX for precise timing)
+
+- End session
+→ STATE = WAIT_M1
+
+
+Key Design Rules
+
+WAIT states never transmit
+
+SEND states transmit once
+
+All retries are bounded
+
+Every session ends by returning to WAIT_M1
+
+No continuous packet spamming
+*/
+
+
+
+

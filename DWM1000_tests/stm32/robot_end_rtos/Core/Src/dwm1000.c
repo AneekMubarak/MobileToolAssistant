@@ -10,33 +10,64 @@
 #include "main.h"
 #include "stm32f4xx_hal.h"
 
+#define MSG_TYPE_POLL 0xA1
+#define MSG_TYPE_RESPONSE 0xB2
+#define MSG_TYPE_FINAL 0xA2
+
+
+
 extern SPI_HandleTypeDef hspi1;
+
+static robot_state_t robot_state = ROBOT_SEND_POLL;
+static uint8_t retries = 0;
+#define MAX_RETRIES 3
+
+#define ANTENNA_DELAY 32000ULL
+
 
 
 void dwm_reset(DWM_Module *module) {
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
-    HAL_Delay(1);  // 1 ms minimum
+//    HAL_Delay(1);  // 1 ms minimum
+    osDelay(1);
 
     // Release  to Hi-Z because open-drain
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_SET);
-    HAL_Delay(10); // Allow DW1000 to boot
+//    HAL_Delay(10); // Allow DW1000 to boot
+    osDelay(1);
 }
 
 
-void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
-    uint8_t tx[1 + len];
-    uint8_t rx[1 + len];
+//void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len) {
+//    uint8_t tx[1 + len];
+//    uint8_t rx[1 + len];
+//
+//    tx[0] = reg_id & 0x3F;
+//
+//    memset(&tx[1], 0, len);
+//
+//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
+//    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
+//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+//
+//    memcpy(data, &rx[1], len);
+//}
 
-    tx[0] = reg_id & 0x3F;
-
-    memset(&tx[1], 0, len);
+void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len)
+{
+    uint8_t header = reg_id & 0x3F;
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 
-    memcpy(data, &rx[1], len);
+    HAL_SPI_Transmit(&hspi1, &header, 1, HAL_MAX_DELAY);
+    HAL_SPI_Receive(&hspi1, data, len, HAL_MAX_DELAY);
+
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 }
+
+
+
+
 
 
 void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
@@ -180,7 +211,9 @@ void dwm_configure(DWM_Module* module){
 	dwm_write_reg_sub(module, 0x2d, 0x06, otp_control, 2);
 
 	//Wait 150us
-	HAL_Delay(1);
+//	HAL_Delay(1);
+    osDelay(1);
+
 
 	// L-3
 	uint8_t pmsc_ctrl_0_lower_2_oct_L3[2] = {0x00,0x02};
@@ -225,18 +258,19 @@ void dwm_basic_transmit(DWM_Module* module){
 
 
 	// WRITE DATA TO TX BUFFER
-	uint8_t tx_data[4] ={0xAA,0xBB,0xCC,0xDD};
+	uint8_t tx_data[6] ={0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
 //	uint8_t tx_data[4] ={0xCA,0xAC,0x09,0xEF};
+	//0xFFEEDDCCBBAA
 
-	dwm_write_reg(module, 0x09, tx_data, 4);
+	dwm_write_reg(module, 0x09, tx_data, 6);
 
 	//SET FRAME LENGTH AND PREAMBLE LENGTH
 	uint8_t tx_frame_control[5] = {0};
 	dwm_read_reg(module, 0x08, tx_frame_control, 5);
-	// fr_len = 4 + 2 =
+	// fr_len = 4 + 2 +2  =
 	// Set frame length
 	tx_frame_control[0] &= 0x80;
-	tx_frame_control[0] |= 6;
+	tx_frame_control[0] |= 8;
 	// Set TXPSR=10, PE=00
 	tx_frame_control[2] &= ~(0x3C);
 	tx_frame_control[2] |= (0b10 << 2);
@@ -255,12 +289,211 @@ void dwm_basic_transmit(DWM_Module* module){
 	sys_ctrl[0] |= (1 << 1);
 	dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
+}
+
+/*
+    buffer: buffer for message , use expected size (only payload no CRC)
+    len: len of buffer array (octs)
+*/
+bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
+
+    uint8_t sys_event_status_reg[5] = {0};
+    uint8_t rx_frame_info_reg[4] = {0};
+    // uint8_t rx_buffer[6] = {0}; // tflen = 6 but the top2 crc bits can be ignored here
+    uint8_t sys_ctrl_reg[4] = {0};
+
+    int tflen = 0;
 
 
+    // ENABLE Rx
+//    dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
+//    sys_ctrl_reg[1] |= (1 << 0); // RXENAB
+//
+//    dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
+
+    // now dw1000 is waiting for preamble
+    // Add timeouts here ig
+    int tries = 300;
+    for (int i=0;i<=tries;i++){
+        dwm_read_reg(module, 0x0F, sys_event_status_reg, 5);
+
+        if(sys_event_status_reg[1]&0x20){ // RXDFR is high
+            dwm_read_reg(module, 0x10,rx_frame_info_reg,4);
+            tflen = rx_frame_info_reg[0]&0x7f; //tflen mask
+            dwm_read_reg(module, 0x11,buffer,tflen-2); // no need CRC bits --> write data to buffer
+            // PROBLEM: can corrupt mem if buff too small
+            // Better to come up with a standard tflen across all DWMs and set to max.
+
+            dwm_write_reg(module, 0x0F, sys_event_status_reg, 5); // clear all status bits
+            return true;
+        }
+
+//        HAL_Delay(1);
+        osDelay(1);
+
+    }
+
+    return false;
+
+}
+
+//------------------
+// Two Way Ranging
+//-------------------
+// use 0x17 for TX_time and 0x15 for Rx_time
+uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
+{
+    uint8_t ts[5];
+    dwm_read_reg_sub(module, reg, 0x00, ts, 5);
+
+    uint64_t value = 0;
+    for (int i = 4; i >= 0; i--) {
+        value = (value << 8) | ts[i];
+    }
+
+    return value;
+}
+
+uint64_t ts_diff(uint64_t a, uint64_t b)
+{
+    //handle wraparound
+    const uint64_t MASK = ((uint64_t)1 << 40) - 1;
+    return (a - b) & MASK;
+}
+
+
+
+int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
+{
+    // write to TX buffer
+    dwm_write_reg(module, 0x09, payload, len);
+
+    // configure TX_FCTRL
+    uint8_t tx_frame_control[5] = {0};
+    dwm_read_reg(module, 0x08, tx_frame_control, 5);
+
+    tx_frame_control[0] &= 0x80;
+    tx_frame_control[0] |= (len + 2); // include CRC
+
+    dwm_write_reg(module, 0x08, tx_frame_control, 5);
+
+    // trigger TX
+    uint8_t sys_ctrl[4] = {0};
+    dwm_read_reg(module, 0x0D, sys_ctrl, 4);
+    sys_ctrl[0] |= (1 << 1); // TXSTRT
+    dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+
+
+    uint8_t sys_event_status_reg[5] = {0};
+
+    osDelay(1);
+
+    dwm_read_reg(module, 0x0f, sys_event_status_reg, 5);
+
+    if(!(sys_event_status_reg[0]&0x80)){
+    	return 0;
+    }
+
+    uint8_t clear[5] = {0};
+    clear[0] = 0x80;  // TXFRS
+    clear[1] = 0xF0;  // clear RXFCE, RXRFTO, RXPTO etc
+    dwm_write_reg(module, 0x0F, clear, 5);
+
+    return 1; // success
+}
+
+
+bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
+{
+    if (len < 6)
+        return false;
+
+    //Check message type
+    if (rx_buffer[0] != MSG_TYPE_RESPONSE)
+        return false;
+
+    //Reconstruct 40-bit little-endian timestamp
+    uint64_t treply = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+        treply |= ((uint64_t)rx_buffer[1 + i]) << (8 * i);
+    }
+
+    *treply_out = treply;
+
+    return true;
 }
 
 
 
 
+void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
 
+    static int receive = 0;
+    static int sent = 0;
+    uint64_t t_reply = 0; // delay time of the remote
+    static uint64_t tx_timestamp = 0;
+    static uint64_t rx_timestamp = 0;
+    uint64_t  distance_cm = 0;
+
+
+//    uint8_t sys_ctrl_reg[4] = {0};
+
+    uint8_t rx_buff[6];
+    uint8_t tx_buff[4] = {0xAA, 0xBB, 0xCC, 0xEE};
+
+    if(!sent){
+        sent = send_frame(module, tx_buff, 4);
+
+        if(sent){
+
+        	// save timestamp
+            // ENABLE Rx
+        	tx_timestamp = read_timestamp(module, 0x17);
+//            dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
+            uint8_t sys_ctrl_reg[4] = {0};
+            sys_ctrl_reg[1] |= (1 << 0); // RXENAB
+            dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
+        }
+
+    }
+    else if(sent && !receive){
+        if(dwm_receive(module, rx_buff, 6)){
+            receive = 1;
+            rx_timestamp = read_timestamp(module, 0x15);
+            process_response(rx_buff,6, &t_reply);
+
+        }
+    }
+
+    if(sent && receive){
+    	// done
+    	uint64_t t_rtt = ts_diff(rx_timestamp,tx_timestamp);
+
+//    	uint64_t t_prop = 0.5*(t_rtt - t_reply);
+//    	uint64_t t_prop = (t_rtt - t_reply) >> 1;
+    	if (t_rtt > t_reply) {
+    	    *t_prop = (t_rtt - t_reply) >> 1;
+
+    	    if (*t_prop > ANTENNA_DELAY)
+    	    {
+    	        *t_prop -= ANTENNA_DELAY;
+    	    }
+//    	    distance_cm = (t_prop * 469176) / 1000000;
+    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
+    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
+//    	    *distance = distance_cm;
+
+    	    uint64_t offset = 360;
+    	    *distance = distance_cm-offset;;
+
+    	}
+
+
+        // reset for next round
+        sent = 0;
+        receive = 0;
+    }
+}
 

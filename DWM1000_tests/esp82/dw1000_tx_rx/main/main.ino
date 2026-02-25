@@ -43,11 +43,13 @@ void loop(){
 	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
 	// dwm_basic_transmit(&dwm1);
 	// delay(10);
+    printRegHex(device_id,RX_BUFFER_SIZE,"Received Data:");
+
 
     uint8_t sys_event_status_reg[5] = {0};
     uint8_t rx_frame_info_reg[4] = {0};
     
-    uint8_t rx_buffer[RX_BUFFER_SIZE] = {0}; // tflen = 8  top2 crc bits can be ignored here
+    // uint8_t rx_buffer[RX_BUFFER_SIZE] = {0}; // tflen = 8  top2 crc bits can be ignored here
 
 
 
@@ -62,10 +64,10 @@ void loop(){
     // dwm_write_reg(&dwm1, 0x0F, clear_tx, 5);
         
     //Receive Data
-    if(!dwm_receive(&dwm1,rx_buffer,RX_BUFFER_SIZE)){
-        Serial.println("Message not received");
-    }
-    printRegHex(rx_buffer,RX_BUFFER_SIZE,"Received Data:");
+    // if(!dwm_receive(&dwm1,rx_buffer,RX_BUFFER_SIZE)){
+    //     Serial.println("Message not received");
+    // }
+    // printRegHex(rx_buffer,RX_BUFFER_SIZE,"Received Data:");
 
 
 

@@ -51,12 +51,14 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
+UART_HandleTypeDef huart3;
+
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
   .stack_size = 128 * 4,
-  .priority = (osPriority_t) 10,
+  .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 osThreadId_t tofTaskHandle;
@@ -71,7 +73,14 @@ int test_counter = 0;
 uint8_t device_id[4] = {0};
 uint8_t device_id_low[2] = {0};
 int txfrs_error_count = 0;
+uint8_t sys_event_status_reg[5] = {0};
+uint64_t poll_ts = 0;
 
+uint8_t rx_buffer[4] = {0};
+uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
+
+uint64_t uwb_dist_cm = 0;
+uint64_t t_prop = 0;
 
 // TOF Sensor
 uint16_t dev = 0x52;   // I2C address (try 0x29 if this fails)
@@ -80,6 +89,7 @@ uint8_t dataReady = 0;
 uint16_t distance = 0;
 uint8_t rangeStatus = 0;
 int status = 0;
+uint64_t dwm_distance = 0;
 
 
 /* USER CODE END PV */
@@ -90,6 +100,7 @@ static void MX_GPIO_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
+static void MX_USART3_UART_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -140,7 +151,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -158,6 +169,7 @@ int main(void)
   MX_I2C1_Init();
   MX_I2S3_Init();
   MX_SPI1_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
 
@@ -210,7 +222,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  tofTaskHandle = osThreadNew(TimeOfFlighMeausure, NULL, &tofTask_attributes);
+//  tofTaskHandle = osThreadNew(TimeOfFlighMeausure, NULL, &tofTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -385,6 +397,39 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -503,6 +548,16 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+extern UART_HandleTypeDef huart2;
+
+int _write(int file, char *ptr, int len)
+{
+    HAL_UART_Transmit(&huart3, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
+
+
 void TimeOfFlighMeausure(void *argument) {
 
 	 while (sensorState == 0){
@@ -553,8 +608,8 @@ void StartDefaultTask(void *argument)
   /* init code for USB_HOST */
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
-//  uint8_t device_id[4] = {0};
-  uint8_t sys_event_status_reg[5] = {0};
+  uint8_t device_id[4] = {0};
+//  uint8_t sys_event_status_reg[5] = {0};
 
   uint8_t clear_tx[5] = {0};
   clear_tx[0] = 0xF0;  // only TX bits
@@ -566,26 +621,26 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+
 	test_counter++;
 	dwm_read_reg(&dwm1, 0x00, device_id, 4);
 	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
-	dwm_basic_transmit(&dwm1);
-	HAL_Delay(10);
-	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
 
-    if(!(sys_event_status_reg[0]&0x80)){
-    	txfrs_error_count++;
-    }
+//	uint8_t payload[4] = {0x1,0x2,0xCC,0xDD}
 
-	HAL_Delay(500);
+//	payload[0]++;
 
+//	if(!send_frame(&dwm1,payload,4)){
+//		txfrs_error_count++;
+//	}
 
-    //clear tx flags
-    dwm_write_reg(&dwm1, 0x0F, clear_tx, 5);
-	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
+	start_ranging(&dwm1,&uwb_dist_cm,&t_prop);
 
+//	uint8_t rx_buffer[4];
+//	dwm_receive(&dwm1, rx_buffer, 4);
 
-    osDelay(10);
+//	robot_uwb_task(&dwm1);
+    osDelay(100);
   }
   /* USER CODE END 5 */
 }

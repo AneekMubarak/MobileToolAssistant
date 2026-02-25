@@ -1,0 +1,146 @@
+____________________________
+Time of flight using DW1000
+____________________________
+
+distance = tof*speed of light
+
+Timestamps in  DW1000 have 15.65ps resolution (1 tick = 15.65ps)
+
+Double sided Two way ranging (DS-TWR)
+
+Robot               Remote
+
+Poll -------------->
+     <------------- Response
+Final ------------->
+    <--------------- Extra (needed bcs we want the robot to do the math for tof)
+
+only 3 or  4 messsages
+each device must record Timestamps
+
+----------
+Timestamps
+---------
+t1 = A sends poll
+t2 = B receives poll
+t3 = B sends response
+t4 = A receives response
+t5 = A sends final
+t6 = B receives final
+
+Robot -> t1,t4,t5
+Remote -> t2,t3,t6
+
+Ra = t4 - t1 (A_recv - A_send)
+Rb = t6 - t3 (B_recv - B_send)
+Da = t5 - t4 (A_send - A_recv)
+Db = t3 - t2 (B_send - B_recv)
+
+ToF = (Ra*Rb - Da*Db) / (Ra+Rb+Da+Db)
+distance = ToF × c
+
+
+// INTERNAL DELAYS OF MCU CAN BE ADDED BY WRITING TO THE ANTENNA DELAY REGISTERS
+
+// KEY REGISTERS
+0x17 — TX_TIME
+0x15 — RX_TIME
+
+both of these are 40 bit Timestamps(5 octs)
+can convert to uint64_t
+
+
+// We neeed a format for transactions so we know which is which
+
+current format = [payload (max 127 bytes) | crc(2 bytes)]
+
+//note -> payload of max 1023 bytes is also possible with TFLE extension, but thats too much for our use case
+
+better one: 
+[ type | anchor_id | timestamps | distance | CRC ]
+
+
+1byte
+type = type of messsage (poll, response, final, extra)
+0x01 = POLL
+0x02 = RESPONSE
+0x03 = FINAL
+0x04 = Extra
+
+Anchor_id (1b)
+0x01 = Anchor 1
+0x10 = Anchor 2
+0x11 = Anchor 3
+0x20 = Robot
+
+
+UWB Packet Protocol (UPP) <--- not real, i just made it up
+-------------------------------------------------------------
+
+Only the remote needs to send timestamps
+We can do something like TCP/IP --> add timestamps to data frame and keep modyfing a count or something at the end they can be extracted and tof can be calculated
+Or just put only the remote end timestamps to reduce packet size
+
+Also the remote has a gpio input in the form of a button, this will inform the robot to start/stop
+1 Button to switch states with a GPIO interrupt - can add a section in the payload for it (0 --> normal op, 1 --> stop/start(flip state))
+or
+2 buttons (one for start one for stop) not sure if possible bcs of pin availability
+
+either way we have to modify the UPP 
+
+Right now lets settle with one button for status --> each time its pressed switch state in the robot
+In that case robot has to poll for UWB message from remote to restart (inefficient??) --> maybe reduce polling freq for that case in the robot
+Also the remote need not transmit endlessly when robot is stopped, tx only when button is pressed and wait for ack to start ranging.
+
+
+
+
+UPP --> proposed protocol
+
+1. A1 ---> R  => [Type | A1(id) | timestamps (empty) | CRC] --> save ts on receive in Remote
+2. R ----> A1 => [Type | R(id) | timestamps (empty) | CRC] --> save ts on receive in Robot
+3. A1 ----> R  => [Type | A1(id) | timestamps(empty) | CRC] --> save ts on remote
+4. R ----> A1 => [Type | R(id) | difference | CRC] 
+
+
+1. Message 1 - POLL
+    [Type=POLL|anchor_id]
+    Robot records t1
+    Remote records t2
+
+2. Message 2 - Response
+    [Type=RESP]
+    Remote records t3
+    Robot records t4
+
+3. Message 3 -Final
+    Robot sends [Type=Final | Ra | Da]
+    Ra = t4-t1;
+    Da = t5-t4;
+
+
+
+
+Algorithm
+
+---------Robot -------
+Send POLL
+Wait TX complete
+Clear TXFRS
+Enable RX immediately
+Wait for RESPONSE
+If received:
+    Read t4
+    Clear RXDFR
+Else:
+    abort and retry
+
+--------Remote ---------
+Always sit in RX
+If POLL received:
+    Read t2
+    Clear RXDFR
+    Send RESPONSE
+    Wait TX complete
+    Clear TXFRS
+    Return to RX immediately

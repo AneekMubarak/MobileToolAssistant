@@ -4,5 +4,5 @@ Sclk D5
 MOSI d7
 MISO d6
 CS d8
-Irq d1
-RST d0
+RESETn D4
+

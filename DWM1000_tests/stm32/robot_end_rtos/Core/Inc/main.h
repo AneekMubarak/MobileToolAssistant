@@ -49,6 +49,8 @@ extern "C" {
 
 /* USER CODE END EM */
 
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
+
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
@@ -107,6 +109,10 @@ void Error_Handler(void);
 #define LD6_GPIO_Port GPIOD
 #define I2S3_MCK_Pin GPIO_PIN_7
 #define I2S3_MCK_GPIO_Port GPIOC
+#define Motor1_Rev_Pin GPIO_PIN_8
+#define Motor1_Rev_GPIO_Port GPIOC
+#define Motor1_Fwd_Pin GPIO_PIN_9
+#define Motor1_Fwd_GPIO_Port GPIOC
 #define VBUS_FS_Pin GPIO_PIN_9
 #define VBUS_FS_GPIO_Port GPIOA
 #define OTG_FS_ID_Pin GPIO_PIN_10
@@ -129,6 +135,10 @@ void Error_Handler(void);
 #define OTG_FS_OverCurrent_GPIO_Port GPIOD
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
+#define Motor2_Fwd_Pin GPIO_PIN_4
+#define Motor2_Fwd_GPIO_Port GPIOB
+#define Motor2_Rev_Pin GPIO_PIN_5
+#define Motor2_Rev_GPIO_Port GPIOB
 #define I2C1_SCL_Pin GPIO_PIN_6
 #define I2C1_SCL_GPIO_Port GPIOB
 #define I2C1_SDA_Pin GPIO_PIN_9
@@ -137,6 +147,9 @@ void Error_Handler(void);
 #define MEMS_INT2_GPIO_Port GPIOE
 
 /* USER CODE BEGIN Private defines */
+#define DW_NSS_GPIO_Port GPIOA
+#define DW_NSS_Pin GPIO_PIN_1
+
 
 /* USER CODE END Private defines */
 

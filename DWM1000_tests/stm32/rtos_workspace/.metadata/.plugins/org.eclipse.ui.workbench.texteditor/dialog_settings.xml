@@ -3,13 +3,26 @@
 	<item key="hasShownOverlayPopupBefore" value="true"/>
 	<item key="replaceBarOpen" value="false"/>
 	<list key="searchhistory">
-		<item value="device_id"/>
-		<item value="DWM1_RESET_N_GPIO_Port"/>
-		<item value="DWLM"/>
-		<item value="DWM"/>
-		<item value="test_counter"/>
+		<item value="HAL_Delay"/>
+		<item value="HAL_"/>
+		<item value="t_prop"/>
+		<item value="rx_buffer"/>
+		<item value="tx_frame_control"/>
+		<item value="buf"/>
+		<item value="huart2"/>
+		<item value="uart"/>
+		<item value="/* USER CODE BEGIN 4 */&#x0A;"/>
+		<item value="write"/>
+		<item value="dwm_receive"/>
+		<item value="issue"/>
+		<item value="buffer"/>
+		<item value="dwm_wait_for_response"/>
+		<item value="tx_data"/>
 	</list>
 	<list key="replacehistory">
+		<item value="DWMRangeTaskHandle"/>
+		<item value="DWMRangeTask_attributes"/>
+		<item value="UWB_Ranging_Task"/>
 		<item value="DWM"/>
 	</list>
 </section>
