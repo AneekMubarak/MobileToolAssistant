@@ -54,10 +54,11 @@ void setup() {
     sys_ctrl[1] |= (1 << 0);   // RXENAB
     dwm_write_reg(&dwm1, 0x0D, sys_ctrl, 4);
 
-    // Add MRXDFR Interrupt -  receiver data frame ready
+    // Add MRXDFR and MTXFRS Interrupt -  receiver data frame ready and message transmitted
     uint8_t sys_event_mask_reg[4] = {0};
     dwm_read_reg(&dwm1,0x0E,sys_event_mask_reg, 4);
     sys_event_mask_reg[1] = sys_event_mask_reg[1]|0x20; // MRXDFR Bit
+    sys_event_mask_reg[0] = sys_event_mask_reg[0]|0x80; // MTXFRS Bit
     dwm_write_reg(&dwm1,0x0E,sys_event_mask_reg,4);
 
 
@@ -99,9 +100,9 @@ void loop(){
 
 }
 
-// RX interrupt
+    // RX interrupt
 //     ↓
-// Read RX timestamp
+    // Read RX timestamp
 //     ↓
 // Compute T_tx = T_rx + delay
 //     ↓

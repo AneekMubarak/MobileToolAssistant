@@ -48,7 +48,8 @@ typedef struct {
 
 typedef enum {
     REMOTE_WAIT_M1,
-    REMOTE_SEND_M2
+    REMOTE_SEND_M2,
+    REMOTE_WAIT_TX_DONE
 } remote_state_t;
 
 extern  int retry_counter;

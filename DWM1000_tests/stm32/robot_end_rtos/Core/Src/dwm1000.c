@@ -352,6 +352,13 @@ uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
     return value;
 }
 
+uint64_t ts_diff(uint64_t a, uint64_t b)
+{
+    //handle wraparound
+    const uint64_t MASK = ((uint64_t)1 << 40) - 1;
+    return (a - b) & MASK;
+}
+
 
 
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
@@ -394,20 +401,54 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 }
 
 
-void start_ranging(DWM_Module* module){
+bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
+{
+    if (len < 6)
+        return false;
+
+    //Check message type
+    if (rx_buffer[0] != MSG_TYPE_RESPONSE)
+        return false;
+
+    //Reconstruct 40-bit little-endian timestamp
+    uint64_t treply = 0;
+
+    for (int i = 0; i < 5; i++)
+    {
+        treply |= ((uint64_t)rx_buffer[1 + i]) << (8 * i);
+    }
+
+    *treply_out = treply;
+
+    return true;
+}
+
+
+
+
+ start_ranging(DWM_Module* module, uint64_t* distance){
 
     static int receive = 0;
     static int sent = 0;
+    uint64_t t_reply = 0; // delay time of the remote
+    static uint64_t tx_timestamp = 0;
+    static uint64_t rx_timestamp = 0;
+    uint64_t  distance_cm = 0;
+
+
 //    uint8_t sys_ctrl_reg[4] = {0};
 
-    uint8_t rx_buff[4];
+    uint8_t rx_buff[6];
     uint8_t tx_buff[4] = {0xAA, 0xBB, 0xCC, 0xEE};
 
     if(!sent){
         sent = send_frame(module, tx_buff, 4);
 
         if(sent){
+
+        	// save timestamp
             // ENABLE Rx
+        	tx_timestamp = read_timestamp(module, 0x17);
 //            dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
             uint8_t sys_ctrl_reg[4] = {0};
             sys_ctrl_reg[1] |= (1 << 0); // RXENAB
@@ -416,18 +457,32 @@ void start_ranging(DWM_Module* module){
 
     }
     else if(sent && !receive){
-        if(dwm_receive(module, rx_buff, 4)){
+        if(dwm_receive(module, rx_buff, 6)){
             receive = 1;
-
+            rx_timestamp = read_timestamp(module, 0x15);
+            process_response(rx_buff,6, &t_reply);
 
         }
     }
 
-//    if(sent && receive){
-//        // reset for next round
-//        sent = 0;
-//        receive = 0;
-//    }
+    if(sent && receive){
+    	// done
+    	uint64_t t_rtt = ts_diff(rx_timestamp,tx_timestamp);
+
+//    	uint64_t t_prop = 0.5*(t_rtt - t_reply);
+//    	uint64_t t_prop = (t_rtt - t_reply) >> 1;
+    	if (t_rtt > t_reply) {
+    	    uint64_t t_prop = (t_rtt - t_reply) >> 1;
+//    	    distance_cm = (t_prop * 469176) / 1000000;
+    	    distance_cm = (t_prop * 469176ULL) / 1000000ULL;
+    	    *distance = distance_cm;
+    	}
+
+
+        // reset for next round
+        sent = 0;
+        receive = 0;
+    }
 }
 
 
