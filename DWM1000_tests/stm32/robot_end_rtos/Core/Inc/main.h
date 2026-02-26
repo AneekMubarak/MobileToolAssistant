@@ -97,8 +97,10 @@ void Error_Handler(void);
 #define DWM3_CS_N_GPIO_Port GPIOB
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
-#define CLK_IN_Pin GPIO_PIN_10
-#define CLK_IN_GPIO_Port GPIOB
+#define tof2_SCL_Pin GPIO_PIN_10
+#define tof2_SCL_GPIO_Port GPIOB
+#define tof2_SDA_Pin GPIO_PIN_11
+#define tof2_SDA_GPIO_Port GPIOB
 #define LD4_Pin GPIO_PIN_12
 #define LD4_GPIO_Port GPIOD
 #define LD3_Pin GPIO_PIN_13
@@ -109,6 +111,10 @@ void Error_Handler(void);
 #define LD6_GPIO_Port GPIOD
 #define I2S3_MCK_Pin GPIO_PIN_7
 #define I2S3_MCK_GPIO_Port GPIOC
+#define tof3_SDA_Pin GPIO_PIN_9
+#define tof3_SDA_GPIO_Port GPIOC
+#define tof3_SCL_Pin GPIO_PIN_8
+#define tof3_SCL_GPIO_Port GPIOA
 #define VBUS_FS_Pin GPIO_PIN_9
 #define VBUS_FS_GPIO_Port GPIOA
 #define OTG_FS_ID_Pin GPIO_PIN_10
@@ -131,10 +137,10 @@ void Error_Handler(void);
 #define OTG_FS_OverCurrent_GPIO_Port GPIOD
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
-#define Audio_SCL_Pin GPIO_PIN_6
-#define Audio_SCL_GPIO_Port GPIOB
-#define Audio_SDA_Pin GPIO_PIN_9
-#define Audio_SDA_GPIO_Port GPIOB
+#define tof1_SCL_Pin GPIO_PIN_6
+#define tof1_SCL_GPIO_Port GPIOB
+#define tof1_SDA_Pin GPIO_PIN_9
+#define tof1_SDA_GPIO_Port GPIOB
 #define MEMS_INT2_Pin GPIO_PIN_1
 #define MEMS_INT2_GPIO_Port GPIOE
 

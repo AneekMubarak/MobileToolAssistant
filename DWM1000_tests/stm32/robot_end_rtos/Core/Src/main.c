@@ -46,6 +46,8 @@
 
 /* Private variables ---------------------------------------------------------*/
 I2C_HandleTypeDef hi2c1;
+I2C_HandleTypeDef hi2c2;
+I2C_HandleTypeDef hi2c3;
 
 I2S_HandleTypeDef hi2s3;
 
@@ -83,13 +85,30 @@ uint8_t device_id_low[2] = {0};
 int txfrs_error_count = 0;
 
 
-// TOF Sensor
-uint16_t dev = 0x52;   // I2C address (try 0x29 if this fails)
-uint8_t sensorState = 0;
-uint8_t dataReady = 0;
-uint16_t distance = 0;
-uint8_t rangeStatus = 0;
-int status = 0;
+
+// ===== TOF Sensor 1 (I2C1) =====
+uint16_t dev1 = 0x52;
+uint8_t sensorState1 = 0;
+uint8_t dataReady1 = 0;
+uint16_t distance1 = 0;
+uint8_t rangeStatus1 = 0;
+int status1 = 0;
+
+// ===== TOF Sensor 2 (I2C2) =====
+uint16_t dev2 = 0x52;
+uint8_t sensorState2 = 0;
+uint8_t dataReady2 = 0;
+uint16_t distance2 = 0;
+uint8_t rangeStatus2 = 0;
+int status2 = 0;
+
+// ===== TOF Sensor 3 (I2C3) =====
+uint16_t dev3 = 0x52;
+uint8_t sensorState3 = 0;
+uint8_t dataReady3 = 0;
+uint16_t distance3 = 0;
+uint8_t rangeStatus3 = 0;
+int status3 = 0;
 
 
 /* USER CODE END PV */
@@ -101,6 +120,8 @@ static void MX_I2C1_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM3_Init(void);
+static void MX_I2C2_Init(void);
+static void MX_I2C3_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -135,6 +156,15 @@ DWM_Module dwm3 = {
     .reset_port = DWM3_RESET_N_GPIO_Port,
     .reset_pin  = DWM3_RESET_N_Pin
 };
+
+
+// VL53L1X driver will use whichever bus this points to
+extern I2C_HandleTypeDef *g_vl53_i2c;
+
+static inline void VL53_Select_I2C(I2C_HandleTypeDef *hi2c)
+{
+  g_vl53_i2c = hi2c;
+}
 
 /* USER CODE END 0 */
 
@@ -171,9 +201,22 @@ int main(void)
   MX_I2S3_Init();
   MX_SPI1_Init();
   MX_TIM3_Init();
+  MX_I2C2_Init();
+  MX_I2C3_Init();
   /* USER CODE BEGIN 2 */
 
-
+//  found_addr = 0;
+//  scan_done = 0;
+//
+//  for (uint8_t addr = 1; addr < 128; addr++)
+//  {
+//      if (HAL_I2C_IsDeviceReady(&hi2c1, addr << 1, 2, 10) == HAL_OK)
+//      {
+//          found_addr = addr;   // 7-bit address
+//          break;
+//      }
+//  }
+//  scan_done = 1;
   //TOF BEGIN
   // Wait for sensor boot
 // while (sensorState == 0)
@@ -325,6 +368,74 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
+
+}
+
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C2_Init(void)
+{
+
+  /* USER CODE BEGIN I2C2_Init 0 */
+
+  /* USER CODE END I2C2_Init 0 */
+
+  /* USER CODE BEGIN I2C2_Init 1 */
+
+  /* USER CODE END I2C2_Init 1 */
+  hi2c2.Instance = I2C2;
+  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c2.Init.OwnAddress1 = 0;
+  hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c2.Init.OwnAddress2 = 0;
+  hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C2_Init 2 */
+
+  /* USER CODE END I2C2_Init 2 */
+
+}
+
+/**
+  * @brief I2C3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I2C3_Init(void)
+{
+
+  /* USER CODE BEGIN I2C3_Init 0 */
+
+  /* USER CODE END I2C3_Init 0 */
+
+  /* USER CODE BEGIN I2C3_Init 1 */
+
+  /* USER CODE END I2C3_Init 1 */
+  hi2c3.Instance = I2C3;
+  hi2c3.Init.ClockSpeed = 100000;
+  hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
+  hi2c3.Init.OwnAddress1 = 0;
+  hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+  hi2c3.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+  hi2c3.Init.OwnAddress2 = 0;
+  hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+  hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+  if (HAL_I2C_Init(&hi2c3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I2C3_Init 2 */
+
+  /* USER CODE END I2C3_Init 2 */
 
 }
 
@@ -546,14 +657,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BOOT1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : CLK_IN_Pin */
-  GPIO_InitStruct.Pin = CLK_IN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
-  HAL_GPIO_Init(CLK_IN_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin
                            Audio_RST_Pin */
   GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
@@ -597,8 +700,8 @@ static inline uint16_t clamp_pwm(uint16_t pwm)
 static void MotorA_Forward(uint16_t pwm)
 {
   pwm = clamp_pwm(pwm);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwm); // PB4
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);   // PB5 off
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0); // reverse
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pwm);   // forward
 }
 
 static void MotorA_Stop(void)
@@ -611,8 +714,8 @@ static void MotorA_Stop(void)
 static void MotorB_Forward(uint16_t pwm)
 {
   pwm = clamp_pwm(pwm);
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pwm); // PC8
-  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);   // PC9 off
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pwm); // forward
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);   // reverse
 }
 
 static void MotorB_Stop(void)
@@ -621,75 +724,285 @@ static void MotorB_Stop(void)
   __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);
 }
 
+
+static void MotorA_Reverse(uint16_t pwm)
+{
+  pwm = clamp_pwm(pwm);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwm);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+}
+
+static void MotorB_Reverse(uint16_t pwm)
+{
+  pwm = clamp_pwm(pwm);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+  __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, pwm);
+}
+
+static void Drive_Forward(uint16_t pwm)
+{
+  MotorA_Forward(pwm);
+  MotorB_Forward(pwm);
+}
+
+static void Drive_Stop(void)
+{
+  MotorA_Stop();
+  MotorB_Stop();
+}
+
+static void Drive_TurnLeft(uint16_t pwm)
+{
+  // left wheel reverse, right wheel forward (spin left)
+  MotorA_Reverse(pwm);
+  MotorB_Forward(pwm);
+}
+
+static void AvoidObstacle_IfNeeded(uint16_t dist_mm)
+{
+  const uint16_t THRESH_MM = 50;   // 5cm
+  const uint16_t pwm = 600;
+
+  if (dist_mm <= THRESH_MM)
+  {
+    Drive_Stop();
+    osDelay(200);
+
+    Drive_TurnLeft(pwm);
+    osDelay(450);
+
+    Drive_Forward(pwm);
+  }
+  else
+  {
+    Drive_Forward(pwm);
+  }
+}
+
+//
+//void MotorPulseTask(void *argument)
+//{
+//  // Start PWM AFTER TIM3 is fully initialized (this is safe here)
+//  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); // PB4
+//  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // PB5
+//  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // PC8
+//  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // PC9
+//
+//  // Ensure stopped
+//  MotorA_Stop();
+//  MotorB_Stop();
+//
+//  const uint16_t pwm = 600;      // 0..999
+//  const uint32_t on_ms  = 2000;  // spin time
+//  const uint32_t off_ms = 1000;  // stop time
+//
+//  for (;;)
+//  {
+//    // Spin both motors "forward" (as you wired it)
+//    MotorA_Forward(pwm);
+//    MotorB_Forward(pwm);
+//    osDelay(on_ms);
+//
+//    // Stop both
+//    MotorA_Stop();
+//    MotorB_Stop();
+//    osDelay(off_ms);
+//  }
+//}
+//
+
+
 void MotorPulseTask(void *argument)
 {
-  // Start PWM AFTER TIM3 is fully initialized (this is safe here)
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1); // PB4
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2); // PB5
   HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3); // PC8
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // PC9
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4); // PB1
 
-  // Ensure stopped
-  MotorA_Stop();
-  MotorB_Stop();
-
-  const uint16_t pwm = 600;      // 0..999
-  const uint32_t on_ms  = 2000;  // spin time
-  const uint32_t off_ms = 1000;  // stop time
+  Drive_Stop();
 
   for (;;)
   {
-    // Spin both motors "forward" (as you wired it)
-    MotorA_Forward(pwm);
-    MotorB_Forward(pwm);
-    osDelay(on_ms);
-
-    // Stop both
-    MotorA_Stop();
-    MotorB_Stop();
-    osDelay(off_ms);
+    AvoidObstacle_IfNeeded(distance1);
+    osDelay(20);
   }
 }
 
 
 
-
-
 void TimeOfFlighMeausure(void *argument) {
 
-	 while (sensorState == 0){
-		 status = VL53L1X_BootState(dev, &sensorState);
-		 HAL_Delay(2);
+	 while (sensorState1 == 0){
+		 status1 = VL53L1X_BootState(dev1, &sensorState1);
+		 osDelay(2);
 	  }
 
 	  // Initialize sensor
-	 status = VL53L1X_SensorInit(dev);
+	 status1 = VL53L1X_SensorInit(dev1);
 	  // Configure ranging
-	 status = VL53L1X_SetDistanceMode(dev, 1);      // 1=short, 2=long
-	 status = VL53L1X_SetTimingBudgetInMs(dev, 100);
-	 status = VL53L1X_SetInterMeasurementInMs(dev, 100);
-	 status = VL53L1X_StartRanging(dev);
+	 status1 = VL53L1X_SetDistanceMode(dev1, 1);      // 1=short, 2=long
+	 status1 = VL53L1X_SetTimingBudgetInMs(dev1, 100);
+	 status1 = VL53L1X_SetInterMeasurementInMs(dev1, 100);
+	 status1 = VL53L1X_StartRanging(dev1);
 
 	for(;;){
 		// tof
-		while (dataReady == 0) {
-			VL53L1X_CheckForDataReady(dev, &dataReady);
-			HAL_Delay(1);
+		while (dataReady1 == 0) {
+			VL53L1X_CheckForDataReady(dev1, &dataReady1);
+			osDelay(1);
 		}
 
-		dataReady = 0;
+		dataReady1 = 0;
 
 		// Read distance
-		VL53L1X_GetDistance(dev, &distance);
-		VL53L1X_GetRangeStatus(dev, &rangeStatus);
+		VL53L1X_GetDistance(dev1, &distance1);
+		VL53L1X_GetRangeStatus(dev1, &rangeStatus1);
 
 		// Clear interrupt
-		VL53L1X_ClearInterrupt(dev);
+		VL53L1X_ClearInterrupt(dev1);
 
 	    osDelay(5);
 
 	}
 }
+
+//
+//void TimeOfFlighMeausure(void *argument) {
+//
+//	 while (sensorState2 == 0){
+//		 status2 = VL53L1X_BootState(dev2, &sensorState2);
+//		 osDelay(2);
+//	  }
+//
+//	 status2 = VL53L1X_SensorInit(dev2);
+//	 status2 = VL53L1X_SetDistanceMode(dev2, 1);
+//	 status2 = VL53L1X_SetTimingBudgetInMs(dev2, 100);
+//	 status2 = VL53L1X_SetInterMeasurementInMs(dev2, 100);
+//	 status2 = VL53L1X_StartRanging(dev2);
+//
+//	for(;;){
+//		while (dataReady2 == 0) {
+//			VL53L1X_CheckForDataReady(dev2, &dataReady2);
+//			osDelay(1);
+//		}
+//
+//		dataReady2 = 0;
+//
+//		VL53L1X_GetDistance(dev2, &distance2);
+//		VL53L1X_GetRangeStatus(dev2, &rangeStatus2);
+//		VL53L1X_ClearInterrupt(dev2);
+//
+//	    osDelay(5);
+//	}
+//}
+
+//void TimeOfFlighMeausure(void *argument) {
+//
+//	 while (sensorState3 == 0){
+//		 status3 = VL53L1X_BootState(dev3, &sensorState3);
+//		 osDelay(2);
+//	  }
+//
+//	 status3 = VL53L1X_SensorInit(dev3);
+//	 status3 = VL53L1X_SetDistanceMode(dev3, 1);
+//	 status3 = VL53L1X_SetTimingBudgetInMs(dev3, 100);
+//	 status3 = VL53L1X_SetInterMeasurementInMs(dev3, 100);
+//	 status3 = VL53L1X_StartRanging(dev3);
+//
+//	for(;;){
+//		while (dataReady3 == 0) {
+//			VL53L1X_CheckForDataReady(dev3, &dataReady3);
+//			osDelay(1);
+//		}
+//
+//		dataReady3 = 0;
+//
+//		VL53L1X_GetDistance(dev3, &distance3);
+//		VL53L1X_GetRangeStatus(dev3, &rangeStatus3);
+//		VL53L1X_ClearInterrupt(dev3);
+//
+//	    osDelay(5);
+//	}
+//}
+
+//
+//void TimeOfFlighMeausure(void *argument)
+//{
+//  // ---------- INIT SENSOR 1 on I2C1 ----------
+//  VL53_Select_I2C(&hi2c1);
+//  while (sensorState1 == 0) {
+//    status1 = VL53L1X_BootState(dev1, &sensorState1);
+//    osDelay(2);
+//  }
+//  status1 = VL53L1X_SensorInit(dev1);
+//  status1 = VL53L1X_SetDistanceMode(dev1, 1);
+//  status1 = VL53L1X_SetTimingBudgetInMs(dev1, 100);
+//  status1 = VL53L1X_SetInterMeasurementInMs(dev1, 100);
+//  status1 = VL53L1X_StartRanging(dev1);
+//
+//  // ---------- INIT SENSOR 2 on I2C2 ----------
+//  VL53_Select_I2C(&hi2c2);
+//  while (sensorState2 == 0) {
+//    status2 = VL53L1X_BootState(dev2, &sensorState2);
+//    osDelay(2);
+//  }
+//  status2 = VL53L1X_SensorInit(dev2);
+//  status2 = VL53L1X_SetDistanceMode(dev2, 1);
+//  status2 = VL53L1X_SetTimingBudgetInMs(dev2, 100);
+//  status2 = VL53L1X_SetInterMeasurementInMs(dev2, 100);
+//  status2 = VL53L1X_StartRanging(dev2);
+//
+//  // ---------- INIT SENSOR 3 on I2C3 ----------
+//  VL53_Select_I2C(&hi2c3);
+//  while (sensorState3 == 0) {
+//    status3 = VL53L1X_BootState(dev3, &sensorState3);
+//    osDelay(2);
+//  }
+//  status3 = VL53L1X_SensorInit(dev3);
+//  status3 = VL53L1X_SetDistanceMode(dev3, 1);
+//  status3 = VL53L1X_SetTimingBudgetInMs(dev3, 100);
+//  status3 = VL53L1X_SetInterMeasurementInMs(dev3, 100);
+//  status3 = VL53L1X_StartRanging(dev3);
+//
+//  // ---------- LOOP ----------
+//  for (;;)
+//  {
+//    // --- READ SENSOR 1 ---
+//    VL53_Select_I2C(&hi2c1);
+//    while (dataReady1 == 0) {
+//      VL53L1X_CheckForDataReady(dev1, &dataReady1);
+//      osDelay(1);
+//    }
+//    dataReady1 = 0;
+//    VL53L1X_GetDistance(dev1, &distance1);
+//    VL53L1X_GetRangeStatus(dev1, &rangeStatus1);
+//    VL53L1X_ClearInterrupt(dev1);
+//
+//    // --- READ SENSOR 2 ---
+//    VL53_Select_I2C(&hi2c2);
+//    while (dataReady2 == 0) {
+//      VL53L1X_CheckForDataReady(dev2, &dataReady2);
+//      osDelay(1);
+//    }
+//    dataReady2 = 0;
+//    VL53L1X_GetDistance(dev2, &distance2);
+//    VL53L1X_GetRangeStatus(dev2, &rangeStatus2);
+//    VL53L1X_ClearInterrupt(dev2);
+//
+//    // --- READ SENSOR 3 ---
+//    VL53_Select_I2C(&hi2c3);
+//    while (dataReady3 == 0) {
+//      VL53L1X_CheckForDataReady(dev3, &dataReady3);
+//      osDelay(1);
+//    }
+//    dataReady3 = 0;
+//    VL53L1X_GetDistance(dev3, &distance3);
+//    VL53L1X_GetRangeStatus(dev3, &rangeStatus3);
+//    VL53L1X_ClearInterrupt(dev3);
+//
+//    osDelay(5);
+//  }
+//}
 
 /* USER CODE END 4 */
 
@@ -722,14 +1035,14 @@ void StartDefaultTask(void *argument)
 	dwm_read_reg(&dwm1, 0x00, device_id, 4);
 	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
 	dwm_basic_transmit(&dwm1);
-	HAL_Delay(10);
+	osDelay(10);
 	dwm_read_reg(&dwm1, 0x0f, sys_event_status_reg, 5);
 
     if(!(sys_event_status_reg[0]&0x80)){
     	txfrs_error_count++;
     }
 
-	HAL_Delay(500);
+	osDelay(500);
 
 
     //clear tx flags
