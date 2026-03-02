@@ -18,12 +18,13 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-static robot_state_t robot_state = ROBOT_SEND_POLL;
+//static robot_state_t robot_state = ROBOT_SEND_POLL;
 static uint8_t retries = 0;
 #define MAX_RETRIES 3
 
 #define ANTENNA_DELAY 32000ULL
 
+static robot_state_t robot_state = RSTATE_SEND_POLL;
 
 
 void dwm_reset(DWM_Module *module) {
@@ -166,6 +167,10 @@ void dwm_configure(DWM_Module* module){
 	//	//3. DRX_Tune_2 (4 oct)
 //	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
     uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+//    0x31 3B 00 6B
+    // for PAC 8 -> 64Mhz Prf
+//    uint8_t new_drx2_config[4] = {0x6b,0x00,0x3b,0x31};
+
 
 	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
 
@@ -232,6 +237,14 @@ void dwm_configure(DWM_Module* module){
 	  ec_ctrl_reg[0] = ec_ctrl_reg[0]|0x04;
 	  dwm_write_reg_sub(module, 0x24,0x00,ec_ctrl_reg,4);
 
+
+	  // NEW
+//	  // set RX PRF to 64Mhz
+//	  uint8_t chan_ctrl_reg[4];
+//	  chan_ctrl_reg[2] = chan_ctrl_reg[2]&0xF3;
+//	  chan_ctrl_reg[2] |= 0x08; // set to 0x04 for 16Mhz
+//	  dwm_write_reg(module,0x1f,chan_ctrl_reg,4)
+
 }
 
 void dwm_basic_transmit(DWM_Module* module){
@@ -250,6 +263,7 @@ void dwm_basic_transmit(DWM_Module* module){
 	 * 		-TR: Transmit bit rate ( ig its not needed) its set to 1 by def DATASHEET_UNCLEAR
 	 * 		-TXPRF: Pulse repetion freq (default of 16Mhz is ok, must be grater than 4Mhz)
 	 * 		-TXPSR: preamble length
+	 *
 	 * 		-NOTE - Modify premable length (TXPSR = 0b10, PE = 0b00) for preamble length of 1024
 	 * 		-NOTE - Receiver must match this
 	 *
@@ -276,8 +290,8 @@ void dwm_basic_transmit(DWM_Module* module){
 	tx_frame_control[2] |= (0b10 << 2);
 
     // Set bitrate to 850kbps (Comment the blwow lines for default of 6.8Mbps)
-    tx_frame_control[1] &= 0x9f; //clear
-    tx_frame_control[1] |= 0x20; //set to 850kpbs
+//    tx_frame_control[1] &= 0x9f; //clear
+//    tx_frame_control[1] |= 0x20; //set to 850kpbs
 
 
 	dwm_write_reg(module, 0x08, tx_frame_control, 5);
@@ -375,6 +389,12 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     tx_frame_control[0] &= 0x80;
     tx_frame_control[0] |= (len + 2); // include CRC
 
+//    // NEW
+//    // Set PRF to 64Mhz (comment out for 16Mhz)
+//    tx_frame_control[1] &= 0b11001111;
+//    tx_frame_control[1] |= 0b00100000;
+
+
     dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
     // trigger TX
@@ -384,22 +404,44 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
 
-    uint8_t sys_event_status_reg[5] = {0};
+//    uint8_t sys_event_status_reg[5] = {0};
+//
+//    osDelay(3);
+//
+//    dwm_read_reg(module, 0x0f, sys_event_status_reg, 5);
+//
+//    if(!(sys_event_status_reg[0]&0x80)){
+//    	return 0;
+//    }
+//
+//    uint8_t clear[5] = {0};
+//    clear[0] = 0x80;  // TXFRS
+//    clear[1] = 0xF0;  // clear RXFCE, RXRFTO, RXPTO etc
+//    dwm_write_reg(module, 0x0F, clear, 5);
+//
+//    return 1; // success
 
-    osDelay(1);
 
-    dwm_read_reg(module, 0x0f, sys_event_status_reg, 5);
+    uint8_t sys_status[5];
+    int timeout = 10000;
 
-    if(!(sys_event_status_reg[0]&0x80)){
-    	return 0;
+    while(timeout--)
+    {
+        dwm_read_reg(module, 0x0F, sys_status, 5);
+        if(sys_status[0] & 0x80)  // TXFRS
+            break;
     }
 
+    if(!(sys_status[0] & 0x80))
+        return 0;   // timeout
+
     uint8_t clear[5] = {0};
-    clear[0] = 0x80;  // TXFRS
-    clear[1] = 0xF0;  // clear RXFCE, RXRFTO, RXPTO etc
+    clear[0] = 0x80;
     dwm_write_reg(module, 0x0F, clear, 5);
 
-    return 1; // success
+
+
+    return 1;
 }
 
 
@@ -428,11 +470,11 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 
 
 
-void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
+void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop, uint64_t* t_reply){
 
     static int receive = 0;
     static int sent = 0;
-    uint64_t t_reply = 0; // delay time of the remote
+//    uint64_t t_reply = 0; /// de.lay time of the remote
     static uint64_t tx_timestamp = 0;
     static uint64_t rx_timestamp = 0;
     uint64_t  distance_cm = 0;
@@ -456,13 +498,12 @@ void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
             sys_ctrl_reg[1] |= (1 << 0); // RXENAB
             dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
         }
-
     }
     else if(sent && !receive){
         if(dwm_receive(module, rx_buff, 6)){
             receive = 1;
             rx_timestamp = read_timestamp(module, 0x15);
-            process_response(rx_buff,6, &t_reply);
+            process_response(rx_buff,6, t_reply);
 
         }
     }
@@ -473,8 +514,8 @@ void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
 
 //    	uint64_t t_prop = 0.5*(t_rtt - t_reply);
 //    	uint64_t t_prop = (t_rtt - t_reply) >> 1;
-    	if (t_rtt > t_reply) {
-    	    *t_prop = (t_rtt - t_reply) >> 1;
+    	if (t_rtt > *t_reply) {
+    	    *t_prop = (t_rtt - *t_reply) >> 1;
 
     	    if (*t_prop > ANTENNA_DELAY)
     	    {
@@ -482,7 +523,7 @@ void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
     	    }
 //    	    distance_cm = (t_prop * 469176) / 1000000;
     	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
-    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
+//    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
 //    	    *distance = distance_cm;
 
     	    uint64_t offset = 360;
@@ -495,5 +536,106 @@ void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop){
         sent = 0;
         receive = 0;
     }
+}
+
+
+bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
+{
+    static uint64_t t_tx_poll = 0;
+    static uint64_t t_rx_resp = 0;
+    static uint64_t t_reply = 0;
+
+    uint8_t rx_buff[6];
+
+    switch(robot_state)
+    {
+        //*******************************************
+        case RSTATE_SEND_POLL:
+        {
+            // Try sending poll frame
+            uint8_t poll_frame[4] = {MSG_TYPE_POLL, 0,0,0};
+
+            if (!send_frame(module, poll_frame, 4)) {
+                // send failed; retry a few times
+                robot_state = RSTATE_ERROR_RECOVERY;
+                return false;
+            }
+
+            // Save TX timestamp immediately
+            t_tx_poll = read_timestamp(module, 0x17);
+
+            // enable receiver
+            uint8_t sys_ctrl_reg[4] = {0};
+            sys_ctrl_reg[1] |= (1 << 0); // RXENAB
+            dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
+
+            // Go to receiving state
+            robot_state = RSTATE_WAIT_RESPONSE;
+
+
+            break;
+        }
+
+        //***********************888
+        case RSTATE_WAIT_RESPONSE:
+        {
+            // Try receive with timeout
+            if (dwm_receive(module, rx_buff, 6)) {
+
+                // Check response contents
+                if (!process_response(rx_buff, 6, &t_reply)) {
+                    // Bad response format
+                    robot_state = RSTATE_ERROR_RECOVERY;
+                    return false;
+                }
+
+                // Save RX time
+                t_rx_resp = read_timestamp(module, 0x15);
+
+                // Compute range
+                robot_state = RSTATE_COMPUTE;
+            }else{
+            	robot_state = RSTATE_ERROR_RECOVERY;
+            }
+            break;
+        }
+
+        // ****************************
+        case RSTATE_COMPUTE:
+        {
+            // Compute RTT, propagation
+            uint64_t t_rtt = ts_diff(t_rx_resp, t_tx_poll);
+
+            if (t_rtt <= t_reply) {
+                // impossible -- clock or receive error
+                robot_state = RSTATE_ERROR_RECOVERY;
+                return false;
+            }
+
+            uint64_t t_prop = (t_rtt - t_reply) >> 1; // div by 2
+            if (t_prop > ANTENNA_DELAY) {
+                t_prop -= ANTENNA_DELAY;
+            }
+
+            uint64_t distance = (t_prop * 469176ULL) / 1000000ULL;
+
+            // Output
+            *distance_cm_out = distance-300;
+
+            // Next poll
+            robot_state = RSTATE_SEND_POLL;
+            return true; // means new distance is available
+        }
+
+        // --------------------------------------------------------------------
+        case RSTATE_ERROR_RECOVERY:
+        {
+            // Reset state, maybe increment retry counters
+            robot_state = RSTATE_SEND_POLL;
+            return false;
+        }
+    }
+
+    return false;  // no new valid distance yet
 }
 

@@ -23,10 +23,11 @@ static uint16_t frame_len = 0;
 static remote_state_t remote_state = REMOTE_WAIT_M1;
 static uint64_t t_rx_m1 = 0;
 static uint64_t t_tx_m2 = 0;
+static uint64_t last_timestamp = 0;
 
 
 int retry_counter = 0;
-#define MAX_RETRIES 3
+#define MAX_RETRIES 3000
 
 
 
@@ -209,11 +210,11 @@ void dwm_configure(DWM_Module* module){
 	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
 
 	//	//3. DRX_Tune_2 (4 oct)
-	// uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
-
-    // mofified PAC size=32 for 1024 preamble size
-    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
-	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
+//	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
+   uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+//    0x31 3B 00 6B
+    // for PAC 8 -> 64Mhz Prf
+    // uint8_t new_drx2_config[4] = {0x6b,0x00,0x3b,0x31};
 
 	//4. NTM
 	uint8_t lde_cfg_1[1] = {0};
@@ -282,13 +283,20 @@ void dwm_configure(DWM_Module* module){
 
 
 
+
+
     // // Add TXFRS Interrupt
     // uint8_t sys_event_mask_reg[4] = {0};
     // dwm_read_reg(module,0x0E,sys_event_mask_reg, 4);
     // sys_event_mask_reg[0] = sys_event_mask_reg[0]|0x80; // set TXFRS bit high
 
 
-
+      // NEW
+	  // set RX PRF to 64Mhz
+	//   uint8_t chan_ctrl_reg[4];
+	//   chan_ctrl_reg[2] = chan_ctrl_reg[2]&0xF3;
+	//   chan_ctrl_reg[2] |= 0x08; // set to 0x04 for 16Mhz
+	//   dwm_write_reg(module,0x1f,chan_ctrl_reg,4);
 
 }
 
@@ -332,8 +340,8 @@ void dwm_basic_transmit(DWM_Module* module){
 	tx_frame_control[2] |= (0b10 << 2);
 
     // Set bitrate to 850kbps (Comment the blwow linesx for default of 6.8Mbps)
-    tx_frame_control[1] &= 0x9f; //clear
-    tx_frame_control[1] |= 0x20; //set to 850kpbs
+    // tx_frame_control[1] &= 0x9f; //clear
+    // tx_frame_control[1] |= 0x20; //set to 850kpbs
 
 
 
@@ -426,6 +434,11 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     tx_frame_control[0] &= 0x80;
     tx_frame_control[0] |= (len + 2); // include CRC
 
+    // NEW
+    // Set PRF to 64Mhz (comment out for 16Mhz)
+    tx_frame_control[1] &= 0b11001111;
+    tx_frame_control[1] |= 0b00100000;
+
     dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
     // trigger TX
@@ -468,6 +481,9 @@ uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
 
     return value;
 }
+
+
+
 
 
 uint64_t ts_diff(uint64_t a, uint64_t b)
@@ -542,7 +558,12 @@ void run(DWM_Module* module, volatile bool* isr_flag)
                 // save timestamp
                 t_rx_m1 = read_timestamp(module,0x15);
                 // Serial.print("Timestamp Rx: ");
+                // if(t_rx_m1 < last_timestamp){
+                //     Serial.println("----------New----------");               
+
+                // }
                 // Serial.println(t_rx_m1);               
+                // last_timestamp = t_rx_m1;
 
                 remote_state = REMOTE_SEND_M2;
             }else {
@@ -559,7 +580,7 @@ void run(DWM_Module* module, volatile bool* isr_flag)
     {
     //Compute delayed TX time
         // uint64_t reply_delay = 256000000ULL;  // ~1ms
-        uint64_t reply_delay = US_TO_DWT(1000);  // 500 µs
+        uint64_t reply_delay = US_TO_DWT(500);  // 500 µs
         t_tx_m2 = (t_rx_m1 + reply_delay) & (((uint64_t)1 << 40) - 1);
 
         //Zero lower 9 bits
@@ -589,6 +610,12 @@ void run(DWM_Module* module, volatile bool* isr_flag)
         dwm_read_reg(module, 0x08, tx_frame_control, 5);
         tx_frame_control[0] &= 0x80;
         tx_frame_control[0] |= (6 + 2);
+
+        // // NEW
+        // // Set PRF to 64Mhz (comment out for 16Mhz)
+        // tx_frame_control[1] &= 0b11001111;
+        // tx_frame_control[1] |= 0b00100000;
+
         dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
         //Trigger delayed TX
@@ -608,6 +635,19 @@ void run(DWM_Module* module, volatile bool* isr_flag)
             
             *isr_flag = false;
             Serial.println("Response Transmitted");
+            // Serial.print("Calculated Time: ");
+            // Serial.println(t_tx_m2);
+
+            // uint64_t tx_timestamp = read_timestamp(module,0x17);
+            // Serial.print("Actual Time: ");
+            // Serial.println(tx_timestamp);
+            // Serial.print("Difference: ");
+            // Serial.println(ts_diff(tx_timestamp,t_tx_m2));
+
+            Serial.print("T_reply: ");
+            Serial.println(ts_diff(t_tx_m2, t_rx_m1));
+
+
 
             uint8_t sys_status[5] = {0};
             dwm_read_reg(module, 0x0F, sys_status, 5);
@@ -639,97 +679,139 @@ void run(DWM_Module* module, volatile bool* isr_flag)
 
 
 
+void run2(DWM_Module* module, volatile bool* isr_flag)
+{
+    uint8_t sys_status[5] = {0};
+    uint8_t frame_info[4] = {0};
 
+    switch(remote_state)
+    {
+        case REMOTE_WAIT_M1:
+        {
+            if(*isr_flag)
+            {   
+                *isr_flag = false;
 
-// void run(DWM_Module* module, volatile bool* isr_flag)
-// {
-//     uint8_t sys_status[5] = {0};
-//     uint8_t frame_info[4] = {0};
+                dwm_read_reg(module, 0x0F, sys_status, 5);
+                dwm_write_reg(module, 0x0F, sys_status, 5); // clear status
 
-//     switch(remote_state)
-//     {
-//     //wait for message
-//     case REMOTE_WAIT_M1:
-//     {
-//         // //enable receiver
-//         // uint8_t sys_ctrl[4] = {0};
-//         // dwm_read_reg(module, 0x0D, sys_ctrl, 4);
-//         // sys_ctrl[1] |= (1 << 0);   // RXENAB
-//         // dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+                bool rxdfr   = sys_status[1] & 0x20;
+                bool rxfcg   = sys_status[1] & 0x40;
+                bool ldedone = sys_status[1] & 0x04;
 
-//         // Wait for interrupt flag
-//         if(*isr_flag)
-//         {
-//             *isr_flag = false;
+                if(rxdfr && rxfcg && ldedone)
+                {
+                    // save timestamp
+                    t_rx_m1 = read_timestamp(module, 0x15);
+                    retry_counter = 0; // reset retries
+                    remote_state = REMOTE_SEND_M2;
+                }
+                else
+                {
+                    // RX corrupted → reset session
+                    remote_reset_session();
+                    Serial.println("RX Error: Returning to REMOTE_WAIT_M1");
+                }
+            }
+            else
+            {
+                // optional retry timeout handling
+                if(++retry_counter > MAX_RETRIES)
+                {
+                    remote_reset_session();
+                    // Serial.println("RX Timeout: Returning to REMOTE_WAIT_M1");
+                }
+            }
+            break;
+        }
 
-//             // Read SYS_STATUS
-//             dwm_read_reg(module, 0x0F, sys_status, 5);
-//             Serial.println("Received Message");
+        case REMOTE_SEND_M2:
+        {
+            // compute delayed TX time
+            uint64_t reply_delay = US_TO_DWT(500);  // 500 µs
+            t_tx_m2 = (t_rx_m1 + reply_delay) & (((uint64_t)1 << 40) - 1);
+            t_tx_m2 &= ~0x1FFULL; // zero lower 9 bits
 
-//             // clear everythig
-//             dwm_write_reg(module, 0x0F, sys_status, 5);
+            // write DX_TIME (0x0A)
+            uint8_t dx_time[5];
+            for(int i = 0; i < 5; i++)
+                dx_time[i] = (t_tx_m2 >> (8*i)) & 0xFF;
+            dwm_write_reg_sub(module, 0x0A, 0x00, dx_time, 5);
 
-//             bool rxdfr = sys_status[1] & 0x20;
-//             bool rxfcg = sys_status[1] & 0x40;  //RXFCG
-//             bool rxfce = sys_status[1] & 0x80;  //RXFCE
-//             bool ldedone = sys_status[1] & 0x04; //LDEDONE(check correct byte per config)
+            // prepare payload
+            uint64_t treply = ts_diff(t_tx_m2, t_rx_m1);
+            uint8_t response_payload[6];
+            response_payload[0] = MSG_TYPE_RESPONSE;
+            for(int i = 0; i < 5; i++){
+                response_payload[1+i] = (treply >> (8*i)) & 0xFF;
 
-//             // Check RXDFR bit
-//             if(rxdfr && rxfcg && ldedone)
-//             {
-//                 // Read frame length
-//                 dwm_read_reg(module, 0x10, frame_info, 4);
-//                 uint16_t tflen = frame_info[0] & 0x7F;
+            }
 
-//                 // Read payload (exclude CRC)
-//                 if(tflen >= 2)
-//                     dwm_read_reg(module, 0x11, rx_buffer, tflen - 2);
+            // Write TX buffer
+            dwm_write_reg(module, 0x09, response_payload, 6);            
 
-//                 // Clear RXDFR flag
-//                 uint8_t clear[5] = {0};
-//                 clear[1] = 0x20;
-//                 dwm_write_reg(module, 0x0F, clear, 5);
+            //Set frame length
+            uint8_t tx_frame_control[5] = {0};
+            dwm_read_reg(module, 0x08, tx_frame_control, 5);
+            tx_frame_control[0] &= 0x80;
+            tx_frame_control[0] |= (6 + 2);
 
-//                 //enable receiver
-//                 // uint8_t sys_ctrl[4] = {0};
-//                 // dwm_read_reg(module, 0x0D, sys_ctrl, 4);
-//                 // sys_ctrl[1] |= (1 << 0);   // RXENAB
-//                 // dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+            //Trigger delayed TX
+            uint8_t sys_ctrl[4] = {0};
+            sys_ctrl[0] |= (1 << 2); // TXDLYS
+            sys_ctrl[0] |= (1 << 1); // TXSTRT
+            dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
-//                 // save timestamp
-//                 t_rx_m1 = read_timestamp(module,0x15);
-//                 Serial.print("Timestamp Rx: ");
-//                 Serial.println(t_rx_m1);               
+            // if(!send_frame(module, response_payload, 6))
+            // {
+            //     remote_reset_session();
+            //     Serial.println("TX Error: Returning to REMOTE_WAIT_M1");
+            //     break;
+            // }
 
-//                 remote_state = REMOTE_SEND_M2;
-//             }else {
-//                 Serial.println("MESSAGE CORRUPTED");
-//             }
-//         }else{
-//             // Serial.print("MESSAGE NOT RECEIVED");
-//         }
+            remote_state = REMOTE_WAIT_TX_DONE;
+            retry_counter = 0;
+            break;
+        }
 
-//         break;
-//     }
-//     //sned message
-//     case REMOTE_SEND_M2:
-//     {
-//         uint8_t response_payload[4] = {0xB2, 0x01, 0x02, 0x03};
-//         delayMicroseconds(1000);
-//         if(send_frame(module, response_payload, 4)){
-//             Serial.println("Sending Response");
+        case REMOTE_WAIT_TX_DONE:
+        {
+            if(*isr_flag)
+            {
+                *isr_flag = false;
+                dwm_read_reg(module, 0x0F, sys_status, 5);
 
-//         }
+                bool txfrs = sys_status[0] & 0x80; // TXFRS bit
+                if(txfrs)
+                {
+                    uint8_t clear[5] = {0}; clear[0] = 0x80;
+                    dwm_write_reg(module, 0x0F, clear, 5); // clear TXFRS
 
-//         //renable receiver after transmission
-//         uint8_t sys_ctrl[4] = {0};
-//         dwm_read_reg(module, 0x0D, sys_ctrl, 4);
-//         sys_ctrl[1] |= (1 << 0);// RXENAB
-//         dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+                    // re-enable RX
+                    uint8_t sys_ctrl[4] = {0};
+                    dwm_read_reg(module, 0x0D, sys_ctrl, 4);
+                    sys_ctrl[1] |= (1 << 0); // RXENAB
+                    dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
-//         remote_state = REMOTE_WAIT_M1;
-//         break;
-//     }
-
-//     }
-// }
+                    remote_state = REMOTE_WAIT_M1;
+                    retry_counter = 0;
+                    Serial.println("TX Success: Back to REMOTE_WAIT_M1");
+                }
+                else
+                {
+                    remote_reset_session();
+                    Serial.println("TX Failure: Returning to REMOTE_WAIT_M1");
+                }
+            }
+            else
+            {
+                if(++retry_counter > MAX_RETRIES)
+                {
+                    remote_reset_session();
+                    Serial.println("TX Timeout: Returning to REMOTE_WAIT_M1");
+                }
+            }
+            break;
+        }
+    }
+}

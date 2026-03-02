@@ -84,7 +84,10 @@ void loop(){
 	// dwm_read_reg(&dwm1, 0x00, device_id, 4);
     // printRegHex(device_id,4,"device_id");
     // Main Remote Function
-    run(&dwm1,&dw_event);
+
+    // run(&dwm1,&dw_event);
+    run2(&dwm1,&dw_event);
+
     // Serial.println(test_counter);
 
 

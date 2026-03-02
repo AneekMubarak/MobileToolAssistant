@@ -21,11 +21,19 @@ typedef struct {
     uint16_t reset_pin;
 } DWM_Module;
 
-typedef enum {
-    ROBOT_SEND_POLL,
-    ROBOT_WAIT_RESP,
-    ROBOT_SEND_FINAL,
-    ROBOT_WAIT_ACK
+//typedef enum {
+//    ROBOT_SEND_POLL,
+//    ROBOT_WAIT_RESP,
+//    ROBOT_SEND_FINAL,
+//    ROBOT_WAIT_ACK
+//} robot_state_t;
+
+typedef enum  {
+    RSTATE_IDLE,
+    RSTATE_SEND_POLL,
+	RSTATE_WAIT_RESPONSE,   // waiting for response
+	RSTATE_COMPUTE,
+    RSTATE_ERROR_RECOVERY
 } robot_state_t;
 
 
@@ -84,8 +92,10 @@ void robot_uwb_task(DWM_Module* module);
 
 bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
 
-void start_ranging(DWM_Module* module, uint64_t* t_reply_p,uint64_t* t_prop);
+//void start_ranging(DWM_Module* module, uint64_t* t_reply_p,uint64_t* t_prop);
+void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop, uint64_t* t_reply);
 
+bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out);
 
 uint64_t ts_diff(uint64_t a, uint64_t b);
 
