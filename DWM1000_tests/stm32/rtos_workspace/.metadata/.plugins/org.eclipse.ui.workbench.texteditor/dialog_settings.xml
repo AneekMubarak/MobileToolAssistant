@@ -3,6 +3,9 @@
 	<item key="hasShownOverlayPopupBefore" value="true"/>
 	<item key="replaceBarOpen" value="false"/>
 	<list key="searchhistory">
+		<item value="SPI_BAUDRATEPRESCALER"/>
+		<item value="SPI_BAUDRATEPRESCALER_4"/>
+		<item value="hspi1"/>
 		<item value="HAL_Delay"/>
 		<item value="HAL_"/>
 		<item value="t_prop"/>
@@ -15,9 +18,6 @@
 		<item value="write"/>
 		<item value="dwm_receive"/>
 		<item value="issue"/>
-		<item value="buffer"/>
-		<item value="dwm_wait_for_response"/>
-		<item value="tx_data"/>
 	</list>
 	<list key="replacehistory">
 		<item value="DWMRangeTaskHandle"/>
