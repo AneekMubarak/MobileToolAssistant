@@ -559,7 +559,7 @@ void run(DWM_Module* module, volatile bool* isr_flag)
     {
     //Compute delayed TX time
         // uint64_t reply_delay = 256000000ULL;  // ~1ms
-        uint64_t reply_delay = US_TO_DWT(1300);  // 500 µs
+        uint64_t reply_delay = US_TO_DWT(1000);  // 500 µs
         t_tx_m2 = (t_rx_m1 + reply_delay) & (((uint64_t)1 << 40) - 1);
 
         //Zero lower 9 bits

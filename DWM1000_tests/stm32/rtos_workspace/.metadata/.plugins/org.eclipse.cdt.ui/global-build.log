@@ -1,4 +1,4 @@
-16:20:13 **** Build of configuration Debug for project robot_end_rtos ****
+15:06:39 **** Build of configuration Debug for project robot_end_rtos ****
 make -j8 all 
 arm-none-eabi-gcc "../USB_HOST/Target/usbh_conf.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"USB_HOST/Target/usbh_conf.d" -MT"USB_HOST/Target/usbh_conf.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "USB_HOST/Target/usbh_conf.o"
 arm-none-eabi-gcc "../USB_HOST/Target/usbh_platform.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"USB_HOST/Target/usbh_platform.d" -MT"USB_HOST/Target/usbh_platform.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "USB_HOST/Target/usbh_platform.o"
@@ -51,7 +51,6 @@ arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -D
 arm-none-eabi-gcc "../Core/Src/stm32f4xx_hal_msp.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/stm32f4xx_hal_msp.d" -MT"Core/Src/stm32f4xx_hal_msp.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32f4xx_hal_msp.o"
 arm-none-eabi-gcc "../Core/Src/stm32f4xx_hal_timebase_tim.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/stm32f4xx_hal_timebase_tim.d" -MT"Core/Src/stm32f4xx_hal_timebase_tim.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32f4xx_hal_timebase_tim.o"
 arm-none-eabi-gcc "../Core/Src/stm32f4xx_it.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/stm32f4xx_it.d" -MT"Core/Src/stm32f4xx_it.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/stm32f4xx_it.o"
-arm-none-eabi-gcc "../Core/Src/syscalls.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/syscalls.d" -MT"Core/Src/syscalls.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/syscalls.o"
 ../Core/Src/dwm1000.c: In function 'dwm_reset':
 ../Core/Src/dwm1000.c:32:5: warning: implicit declaration of function 'osDelay' [-Wimplicit-function-declaration]
    32 |     osDelay(1);
@@ -67,6 +66,7 @@ arm-none-eabi-gcc "../Core/Src/syscalls.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBU
 ../Core/Src/dwm1000.c:21:22: warning: 'robot_state' defined but not used [-Wunused-variable]
    21 | static robot_state_t robot_state = ROBOT_SEND_POLL;
       |                      ^~~~~~~~~~~
+arm-none-eabi-gcc "../Core/Src/syscalls.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/syscalls.d" -MT"Core/Src/syscalls.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/syscalls.o"
 ../Core/Src/main.c: In function 'StartDefaultTask':
 ../Core/Src/main.c:679:11: warning: variable 'clear_tx' set but not used [-Wunused-but-set-variable]
   679 |   uint8_t clear_tx[5] = {0};
@@ -79,224 +79,22 @@ Finished building target: robot_end_rtos.elf
 arm-none-eabi-size  robot_end_rtos.elf 
 arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
    text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
+  60672	    144	  23368	  84184	  148d8	robot_end_rtos.elf
 Finished building: default.size.stdout
  
 Finished building: robot_end_rtos.list
  
-16:20:21 **** Incremental Build of configuration Debug for project robot_end_rtos ****
+15:06:55 **** Incremental Build of configuration Debug for project robot_end_rtos ****
 make -j8 all 
 arm-none-eabi-size  robot_end_rtos.elf 
    text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
+  60672	    144	  23368	  84184	  148d8	robot_end_rtos.elf
 Finished building: default.size.stdout
  
-16:24:07 **** Incremental Build of configuration Debug for project robot_end_rtos ****
+23:10:09 **** Incremental Build of configuration Debug for project robot_end_rtos ****
 make -j8 all 
 arm-none-eabi-size  robot_end_rtos.elf 
    text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:25:24 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-gcc "../Core/Src/dwm1000.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dwm1000.d" -MT"Core/Src/dwm1000.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dwm1000.o"
-../Core/Src/dwm1000.c: In function 'dwm_reset':
-../Core/Src/dwm1000.c:32:5: warning: implicit declaration of function 'osDelay' [-Wimplicit-function-declaration]
-   32 |     osDelay(1);
-      |     ^~~~~~~
-../Core/Src/dwm1000.c: In function 'dwm_receive':
-../Core/Src/dwm1000.c:303:13: warning: unused variable 'sys_ctrl_reg' [-Wunused-variable]
-  303 |     uint8_t sys_ctrl_reg[4] = {0};
-      |             ^~~~~~~~~~~~
-../Core/Src/dwm1000.c: At top level:
-../Core/Src/dwm1000.c:22:16: warning: 'retries' defined but not used [-Wunused-variable]
-   22 | static uint8_t retries = 0;
-      |                ^~~~~~~
-../Core/Src/dwm1000.c:21:22: warning: 'robot_state' defined but not used [-Wunused-variable]
-   21 | static robot_state_t robot_state = ROBOT_SEND_POLL;
-      |                      ^~~~~~~~~~~
-arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: robot_end_rtos.elf
- 
-arm-none-eabi-size  robot_end_rtos.elf 
-arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
-   text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-Finished building: robot_end_rtos.list
- 
-16:25:29 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:35:13 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:36:30 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:36:43 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:36:56 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  60016	    144	  23368	  83528	  14648	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:41:51 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-gcc "../Core/Src/dwm1000.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dwm1000.d" -MT"Core/Src/dwm1000.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dwm1000.o"
-../Core/Src/dwm1000.c: In function 'dwm_reset':
-../Core/Src/dwm1000.c:32:5: warning: implicit declaration of function 'osDelay' [-Wimplicit-function-declaration]
-   32 |     osDelay(1);
-      |     ^~~~~~~
-../Core/Src/dwm1000.c: In function 'dwm_receive':
-../Core/Src/dwm1000.c:303:13: warning: unused variable 'sys_ctrl_reg' [-Wunused-variable]
-  303 |     uint8_t sys_ctrl_reg[4] = {0};
-      |             ^~~~~~~~~~~~
-../Core/Src/dwm1000.c: At top level:
-../Core/Src/dwm1000.c:22:16: warning: 'retries' defined but not used [-Wunused-variable]
-   22 | static uint8_t retries = 0;
-      |                ^~~~~~~
-../Core/Src/dwm1000.c:21:22: warning: 'robot_state' defined but not used [-Wunused-variable]
-   21 | static robot_state_t robot_state = ROBOT_SEND_POLL;
-      |                      ^~~~~~~~~~~
-arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: robot_end_rtos.elf
- 
-arm-none-eabi-size  robot_end_rtos.elf 
-arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
-   text	   data	    bss	    dec	    hex	filename
-  60064	    144	  23368	  83576	  14678	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-Finished building: robot_end_rtos.list
- 
-16:44:27 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-gcc "../Core/Src/dwm1000.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dwm1000.d" -MT"Core/Src/dwm1000.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dwm1000.o"
-../Core/Src/dwm1000.c: In function 'dwm_reset':
-../Core/Src/dwm1000.c:32:5: warning: implicit declaration of function 'osDelay' [-Wimplicit-function-declaration]
-   32 |     osDelay(1);
-      |     ^~~~~~~
-../Core/Src/dwm1000.c: In function 'dwm_receive':
-../Core/Src/dwm1000.c:303:13: warning: unused variable 'sys_ctrl_reg' [-Wunused-variable]
-  303 |     uint8_t sys_ctrl_reg[4] = {0};
-      |             ^~~~~~~~~~~~
-../Core/Src/dwm1000.c: At top level:
-../Core/Src/dwm1000.c:22:16: warning: 'retries' defined but not used [-Wunused-variable]
-   22 | static uint8_t retries = 0;
-      |                ^~~~~~~
-../Core/Src/dwm1000.c:21:22: warning: 'robot_state' defined but not used [-Wunused-variable]
-   21 | static robot_state_t robot_state = ROBOT_SEND_POLL;
-      |                      ^~~~~~~~~~~
-arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: robot_end_rtos.elf
- 
-arm-none-eabi-size  robot_end_rtos.elf 
-arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
-   text	   data	    bss	    dec	    hex	filename
-  60064	    144	  23368	  83576	  14678	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-Finished building: robot_end_rtos.list
- 
-16:46:22 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-gcc "../Core/Src/dwm1000.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/dwm1000.d" -MT"Core/Src/dwm1000.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/dwm1000.o"
-arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
-../Core/Src/dwm1000.c: In function 'dwm_reset':
-../Core/Src/dwm1000.c:32:5: warning: implicit declaration of function 'osDelay' [-Wimplicit-function-declaration]
-   32 |     osDelay(1);
-      |     ^~~~~~~
-../Core/Src/dwm1000.c: In function 'dwm_receive':
-../Core/Src/dwm1000.c:303:13: warning: unused variable 'sys_ctrl_reg' [-Wunused-variable]
-  303 |     uint8_t sys_ctrl_reg[4] = {0};
-      |             ^~~~~~~~~~~~
-../Core/Src/dwm1000.c: At top level:
-../Core/Src/dwm1000.c:22:16: warning: 'retries' defined but not used [-Wunused-variable]
-   22 | static uint8_t retries = 0;
-      |                ^~~~~~~
-../Core/Src/dwm1000.c:21:22: warning: 'robot_state' defined but not used [-Wunused-variable]
-   21 | static robot_state_t robot_state = ROBOT_SEND_POLL;
-      |                      ^~~~~~~~~~~
-../Core/Src/main.c: In function 'StartDefaultTask':
-../Core/Src/main.c:614:11: warning: variable 'clear_tx' set but not used [-Wunused-but-set-variable]
-  614 |   uint8_t clear_tx[5] = {0};
-      |           ^~~~~~~~
-arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: robot_end_rtos.elf
- 
-arm-none-eabi-size  robot_end_rtos.elf 
-arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
-   text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23304	  81304	  13d98	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-Finished building: robot_end_rtos.list
- 
-16:46:28 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23304	  81304	  13d98	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:46:32 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23304	  81304	  13d98	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:47:11 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23304	  81304	  13d98	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-16:47:29 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-gcc "../Core/Src/main.c" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DUSE_HAL_DRIVER -DSTM32F407xx -c -I../USB_HOST/App -I../USB_HOST/Target -I../Core/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc -I../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy -I../Middlewares/ST/STM32_USB_Host_Library/Core/Inc -I../Middlewares/ST/STM32_USB_Host_Library/Class/CDC/Inc -I../Drivers/CMSIS/Device/ST/STM32F4xx/Include -I../Drivers/CMSIS/Include -I../Middlewares/Third_Party/FreeRTOS/Source/include -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F -I../Core/Inc/VL53L1X -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"Core/Src/main.d" -MT"Core/Src/main.o" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "Core/Src/main.o"
-../Core/Src/main.c: In function 'StartDefaultTask':
-../Core/Src/main.c:614:11: warning: variable 'clear_tx' set but not used [-Wunused-but-set-variable]
-  614 |   uint8_t clear_tx[5] = {0};
-      |           ^~~~~~~~
-arm-none-eabi-gcc -o "robot_end_rtos.elf" @"objects.list"   -mcpu=cortex-m4 -T"E:\CME495_Capstone\MobileToolAssistant\DWM1000_tests\stm32\robot_end_rtos\STM32F407VGTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="robot_end_rtos.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
-Finished building target: robot_end_rtos.elf
- 
-arm-none-eabi-size  robot_end_rtos.elf 
-arm-none-eabi-objdump -h -S robot_end_rtos.elf  > "robot_end_rtos.list"
-   text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23296	  81296	  13d90	robot_end_rtos.elf
-Finished building: default.size.stdout
- 
-Finished building: robot_end_rtos.list
- 
-17:01:12 **** Incremental Build of configuration Debug for project robot_end_rtos ****
-make -j8 all 
-arm-none-eabi-size  robot_end_rtos.elf 
-   text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23296	  81296	  13d90	robot_end_rtos.elf
+  60672	    144	  23368	  84184	  148d8	robot_end_rtos.elf
 Finished building: default.size.stdout
  

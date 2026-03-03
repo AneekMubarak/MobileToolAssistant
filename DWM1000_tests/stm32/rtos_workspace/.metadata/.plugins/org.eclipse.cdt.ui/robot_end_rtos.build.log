@@ -1,10 +1,10 @@
-17:01:12 **** Incremental Build of configuration Debug for project robot_end_rtos ****
+23:10:09 **** Incremental Build of configuration Debug for project robot_end_rtos ****
 make -j8 all 
 arm-none-eabi-size  robot_end_rtos.elf 
    text	   data	    bss	    dec	    hex	filename
-  57856	    144	  23296	  81296	  13d90	robot_end_rtos.elf
+  60672	    144	  23368	  84184	  148d8	robot_end_rtos.elf
 Finished building: default.size.stdout
  
 
-17:01:12 Build Finished. 0 errors, 0 warnings. (took 395ms)
+23:10:11 Build Finished. 0 errors, 0 warnings. (took 2s.429ms)
 
