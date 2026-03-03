@@ -8,8 +8,10 @@
 #define SPI_SPEED_MAX 20000000
 
 #define MSG_TYPE_POLL 0xA1
+#define MSG_TYPE_POLL_2 0xA2
+
 #define MSG_TYPE_RESPONSE 0xB2
-#define MSG_TYPE_FINAL 0xA2
+#define MSG_TYPE_FINAL 0xA3
 
 #define DWT_TIME_UNITS (1.0 / (499.2e6 * 128.0))
 #define US_TO_DWT(us) ((uint64_t)((us) / (DWT_TIME_UNITS * 1e6)))
@@ -23,11 +25,16 @@ static uint16_t frame_len = 0;
 static remote_state_t remote_state = REMOTE_WAIT_M1;
 static uint64_t t_rx_m1 = 0;
 static uint64_t t_tx_m2 = 0;
+
+static uint64_t t_rx_m3 = 0;
+static uint64_t t_tx_m4 = 0;
+
+
 static uint64_t last_timestamp = 0;
 
 
-int retry_counter = 0;
-#define MAX_RETRIES 3000
+static int retry_counter = 0;
+#define MAX_RETRIES 20000
 
 
 
@@ -494,16 +501,40 @@ uint64_t ts_diff(uint64_t a, uint64_t b)
 }
 
 
-void remote_reset_session()
+void remote_reset_session(DWM_Module* module)
 {
     retry_counter = 0;
     t_rx_m1 = 0;
     t_tx_m2 = 0;
+    t_rx_m3 = 0;
+    t_tx_m4 = 0;
 
+    uint8_t sys_ctrl[4] = {0};
+    sys_ctrl[0] |= (1 << 6);  // TRXOFF
+    dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+
+    // Clear all status flags
+    uint8_t clear[5] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    dwm_write_reg(module, 0x0F, clear, 5);
+
+    // Re-enable RX
+    uint8_t sys_ctrl2[4] = {0};
+    sys_ctrl2[1] |= (1 << 0);  // RXENAB
+    dwm_write_reg(module, 0x0D, sys_ctrl2, 4);
     remote_state = REMOTE_WAIT_M1;
 }
 
+bool process_response(uint8_t *rx_buffer, uint16_t len, uint8_t msg_type)
+{
+    if (len < 6)
+        return false;
 
+    //Check message type
+    if (rx_buffer[0] != msg_type)
+        return false;
+
+    return true;
+}
 
 void run(DWM_Module* module, volatile bool* isr_flag)
 {
@@ -700,7 +731,19 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
                 bool ldedone = sys_status[1] & 0x04;
 
                 if(rxdfr && rxfcg && ldedone)
-                {
+                {   
+
+                    // check if the response is of the correct type
+                    uint8_t rx_buff_m3[6];
+
+                    dwm_read_reg(module, 0x11, rx_buff_m3, 6);
+
+                    if(!process_response(rx_buff_m3, 6,MSG_TYPE_POLL)){
+                    remote_reset_session(module);
+
+                    Serial.println("STATE: REMOTE WAIT M1 -> RX Error: Returning to REMOTE_WAIT_M1");
+                    break;
+                    }
                     // save timestamp
                     t_rx_m1 = read_timestamp(module, 0x15);
                     retry_counter = 0; // reset retries
@@ -709,8 +752,10 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
                 else
                 {
                     // RX corrupted → reset session
-                    remote_reset_session();
-                    Serial.println("RX Error: Returning to REMOTE_WAIT_M1");
+                    remote_reset_session(module);
+                    Serial.println("STATE: REMOTE WAIT M1 - > RX Error: Returning to REMOTE_WAIT_M1");
+                    break;
+
                 }
             }
             else
@@ -718,8 +763,9 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
                 // optional retry timeout handling
                 if(++retry_counter > MAX_RETRIES)
                 {
-                    remote_reset_session();
+                    remote_reset_session(module);
                     // Serial.println("RX Timeout: Returning to REMOTE_WAIT_M1");
+                    break;
                 }
             }
             break;
@@ -728,7 +774,7 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
         case REMOTE_SEND_M2:
         {
             // compute delayed TX time
-            uint64_t reply_delay = US_TO_DWT(500);  // 500 µs
+            uint64_t reply_delay = US_TO_DWT(1000);  // 500 µs
             t_tx_m2 = (t_rx_m1 + reply_delay) & (((uint64_t)1 << 40) - 1);
             t_tx_m2 &= ~0x1FFULL; // zero lower 9 bits
 
@@ -764,7 +810,7 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
 
             // if(!send_frame(module, response_payload, 6))
             // {
-            //     remote_reset_session();
+            //     remote_reset_session(module);
             //     Serial.println("TX Error: Returning to REMOTE_WAIT_M1");
             //     break;
             // }
@@ -784,8 +830,156 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
                 bool txfrs = sys_status[0] & 0x80; // TXFRS bit
                 if(txfrs)
                 {
-                    uint8_t clear[5] = {0}; clear[0] = 0x80;
-                    dwm_write_reg(module, 0x0F, clear, 5); // clear TXFRS
+                    uint8_t clear[5] = {0}; 
+                    dwm_read_reg(module,0x0F,clear,5);
+                    // clear[0] = 0x80;
+                    dwm_write_reg(module, 0x0F, clear, 5); // clear All
+
+                    // re-enable RX
+                    uint8_t sys_ctrl[4] = {0};
+                    dwm_read_reg(module, 0x0D, sys_ctrl, 4);
+                    sys_ctrl[1] |= (1 << 0); // RXENAB
+                    dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+
+
+                    remote_state = REMOTE_WAIT_M3;
+                    retry_counter = 0;
+                    Serial.println("STATE: REMOTE WAIT TX DONE -> TX Success: Moving on to REMOTE_WAIT_M3");
+                }
+                else
+                {
+                    remote_reset_session(module);
+                    Serial.println(" STATE: REMOTE WAIT TX DONE -> TX Failure: Returning to REMOTE_WAIT_M1");
+                }
+            }
+            else
+            {
+                if(++retry_counter > MAX_RETRIES)
+                {
+                    remote_reset_session(module);
+                    Serial.println("STATE: REMOTE WAIT TX DONE -> TX Timeout: Returning to REMOTE_WAIT_M1");
+                }
+            }
+            break;
+        }
+/// NEW ADDITION FOR DS TWR *******
+        case REMOTE_WAIT_M3:
+        {
+            if(*isr_flag)
+            {
+                *isr_flag =  false;
+                dwm_read_reg(module, 0x0F, sys_status, 5);
+                dwm_write_reg(module, 0x0F, sys_status, 5); // clear status
+
+                bool rxdfr   = sys_status[1] & 0x20;
+                bool rxfcg   = sys_status[1] & 0x40;
+                bool ldedone = sys_status[1] & 0x04;
+
+                if(rxdfr && rxfcg && ldedone){
+                    // check if the response is of the correct type
+                    uint8_t rx_buff_m3[6];
+
+                    dwm_read_reg(module, 0x11, rx_buff_m3, 6);
+
+                    if(!process_response(rx_buff_m3, 6,MSG_TYPE_POLL_2)){
+                    remote_reset_session(module);
+                    Serial.println("STATE: REMOTE WAIT M3 -> RX Error: Returning to REMOTE_WAIT_M1 - WRONG MSG TYPE");
+                    break;
+                    }
+                    
+
+                    // save timestamp
+                    t_rx_m3 = read_timestamp(module, 0x15);
+                    retry_counter = 0; // reset retries
+                    remote_state = REMOTE_SEND_M4;
+                }
+                else
+                {
+                    // RX corrupted - reset session
+                    remote_reset_session(module);
+                    Serial.println("STATE: REMOTE WAIT M3 -> RX Error: Returning to REMOTE_WAIT_M1");
+
+                    Serial.print("RXDFR: ");
+                    Serial.print(rxdfr ? "1" : "0");
+
+                    Serial.print("  RXFCG: ");
+                    Serial.print(rxfcg ? "1" : "0");
+
+                    Serial.print("  LDEDONE: ");
+                    Serial.println(ldedone ? "1" : "0");
+                }                
+                
+            }else{
+
+                if(++retry_counter > MAX_RETRIES)
+                {
+                    remote_reset_session(module);
+                    Serial.println(" STATE: REMOTE WAIT M3 -> RX Timeout: Returning to REMOTE_WAIT_M1");
+                    break;
+                }
+            }
+
+            break;
+        }
+
+        case REMOTE_SEND_M4:
+        {
+            
+            // compute delayed TX time
+            uint64_t reply_delay = US_TO_DWT(1000);  // 500 µs
+            t_tx_m4 = (t_rx_m3 + reply_delay) & (((uint64_t)1 << 40) - 1);
+            t_tx_m4 &= ~0x1FFULL; // zero lower 9 bits
+
+            // write DX_TIME (0x0A)
+            uint8_t dx_time[5];
+            for(int i = 0; i < 5; i++)
+                dx_time[i] = (t_tx_m4 >> (8*i)) & 0xFF;
+            dwm_write_reg_sub(module, 0x0A, 0x00, dx_time, 5);
+
+            // prepare payload
+            uint64_t treply = ts_diff(t_tx_m4, t_rx_m3);
+            uint8_t response_payload[6];
+            response_payload[0] = MSG_TYPE_FINAL;
+            for(int i = 0; i < 5; i++){
+                response_payload[1+i] = (treply >> (8*i)) & 0xFF;
+
+            }
+
+            // Write TX buffer
+            dwm_write_reg(module, 0x09, response_payload, 6);            
+
+            //Set frame length
+            uint8_t tx_frame_control[5] = {0};
+            dwm_read_reg(module, 0x08, tx_frame_control, 5);
+            tx_frame_control[0] &= 0x80;
+            tx_frame_control[0] |= (6 + 2);
+
+            //Trigger delayed TX
+            uint8_t sys_ctrl[4] = {0};
+            sys_ctrl[0] |= (1 << 2); // TXDLYS
+            sys_ctrl[0] |= (1 << 1); // TXSTRT
+            dwm_write_reg(module, 0x0D, sys_ctrl, 4);
+
+
+            remote_state = REMOTE_WAIT_TX_DONE_FINAL;
+            retry_counter = 0;
+            break;
+        }
+
+        case REMOTE_WAIT_TX_DONE_FINAL:
+        {
+            if(*isr_flag)
+            {
+                *isr_flag = false;
+                dwm_read_reg(module, 0x0F, sys_status, 5);
+
+                bool txfrs = sys_status[0] & 0x80; // TXFRS bit
+                if(txfrs)
+                {
+                    uint8_t clear[5] = {0}; 
+                    dwm_read_reg(module,0x0F,clear,5);
+                    // clear[0] = 0x80;
+                    dwm_write_reg(module, 0x0F, clear, 5); // clear All
 
                     // re-enable RX
                     uint8_t sys_ctrl[4] = {0};
@@ -795,23 +989,28 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
 
                     remote_state = REMOTE_WAIT_M1;
                     retry_counter = 0;
-                    Serial.println("TX Success: Back to REMOTE_WAIT_M1");
+                    Serial.println("STATE: REMOTE_WAIT_TX_DONE_FINAL -> TX Success: Moving on to REMOTE_WAIT_M1");
                 }
                 else
                 {
-                    remote_reset_session();
-                    Serial.println("TX Failure: Returning to REMOTE_WAIT_M1");
+                    remote_reset_session(module);
+                    Serial.println("STATE: REMOTE_WAIT_TX_DONE_FINAL -> TX Failure: Returning to REMOTE_WAIT_M1");
+                    break;
                 }
             }
             else
             {
                 if(++retry_counter > MAX_RETRIES)
                 {
-                    remote_reset_session();
-                    Serial.println("TX Timeout: Returning to REMOTE_WAIT_M1");
+                    remote_reset_session(module);
+                    Serial.println("STATE: REMOTE_WAIT_TX_DONE_FINAL -> TX Timeout: Returning to REMOTE_WAIT_M1");
+                    break;
                 }
             }
             break;
         }
+
+
+
     }
 }

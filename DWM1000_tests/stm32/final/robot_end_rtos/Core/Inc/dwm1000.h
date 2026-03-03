@@ -31,9 +31,13 @@ typedef struct {
 typedef enum  {
     RSTATE_IDLE,
     RSTATE_SEND_POLL,
-	RSTATE_WAIT_RESPONSE,   // waiting for response
+	RSTATE_WAIT_RESPONSE_1,
+
 	RSTATE_COMPUTE,
-    RSTATE_ERROR_RECOVERY
+    RSTATE_ERROR_RECOVERY,
+
+	RSTATE_SEND_POLL_2,
+	RSTATE_WAIT_RESPONSE_2
 } robot_state_t;
 
 
@@ -91,6 +95,8 @@ void robot_uwb_task(DWM_Module* module);
 
 
 bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
+bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
+
 
 //void start_ranging(DWM_Module* module, uint64_t* t_reply_p,uint64_t* t_prop);
 void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop, uint64_t* t_reply);

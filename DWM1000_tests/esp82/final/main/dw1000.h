@@ -49,10 +49,14 @@ typedef struct {
 typedef enum {
     REMOTE_WAIT_M1,
     REMOTE_SEND_M2,
-    REMOTE_WAIT_TX_DONE
+    REMOTE_WAIT_TX_DONE,
+    REMOTE_WAIT_M3,
+    REMOTE_SEND_M4,
+    REMOTE_WAIT_TX_DONE_FINAL
+
 } remote_state_t;
 
-extern  int retry_counter;
+// extern  int retry_counter;
 
 void dwm_reset(DWM_Module *module);
 
@@ -80,6 +84,8 @@ void run2(DWM_Module* module, volatile bool* isr_flag);
 
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len);
 
+bool process_response(uint8_t *rx_buffer, uint16_t len, uint8_t msg_type);
+void remote_reset_session();
 
 
 #endif

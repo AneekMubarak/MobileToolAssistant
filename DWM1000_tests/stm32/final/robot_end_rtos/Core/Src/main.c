@@ -59,14 +59,14 @@ UART_HandleTypeDef huart3;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 1024  * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 osThreadId_t tofTaskHandle;
 const osThreadAttr_t tofTask_attributes = {
   .name = "tofTask",
-  .stack_size = 128 * 4,
+  .stack_size = 1024  * 4,
   .priority = (osPriority_t) 5,
 };
 
@@ -229,7 +229,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-//  tofTaskHandle = osThreadNew(TimeOfFlighMeausure, NULL, &tofTask_attributes);
+  tofTaskHandle = osThreadNew(TimeOfFlighMeausure, NULL, &tofTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -630,7 +630,7 @@ void TimeOfFlighMeausure(void *argument) {
 
 	 while (sensorState == 0){
 		 status = VL53L1X_BootState(dev, &sensorState);
-		 HAL_Delay(2);
+		 osDelay(2);
 	  }
 
 	  // Initialize sensor
@@ -645,7 +645,7 @@ void TimeOfFlighMeausure(void *argument) {
 		// tof
 		while (dataReady == 0) {
 			VL53L1X_CheckForDataReady(dev, &dataReady);
-			HAL_Delay(1);
+			osDelay(1);
 		}
 
 		dataReady = 0;
@@ -657,7 +657,7 @@ void TimeOfFlighMeausure(void *argument) {
 		// Clear interrupt
 		VL53L1X_ClearInterrupt(dev);
 
-	    osDelay(5);
+	    osDelay(100);
 
 	}
 }
@@ -691,7 +691,7 @@ void StartDefaultTask(void *argument)
   HAL_SPI_DeInit(&hspi1);
 
   // Change prescaler to fast
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
 
   // Re-init SPI
   HAL_SPI_Init(&hspi1);
