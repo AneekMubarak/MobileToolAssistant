@@ -1,0 +1,123 @@
+#include "motor_hw.h"
+
+extern TIM_HandleTypeDef htim3;
+
+
+/* ================= Helper ================= */
+
+static inline uint16_t clamp_pwm(uint16_t pwm)
+{
+    if(pwm > PWM_MAX)
+        return PWM_MAX;
+
+    return pwm;
+}
+
+
+/* ================= Motor Low Level ================= */
+
+/*
+Motor wiring based on your implementation:
+
+Motor A (LEFT)
+CH1 reverse
+CH2 forward
+
+Motor B (RIGHT)
+CH3 forward
+CH4 reverse
+*/
+
+void MotorHW_SetLeftSpeed(int speed)
+{
+    uint16_t pwm = clamp_pwm(abs(speed));
+
+    if(speed > 0)     // forward
+    {
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, pwm);
+    }
+    else if(speed < 0) // reverse
+    {
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, pwm);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+    }
+    else
+    {
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_1, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_2, 0);
+    }
+}
+
+void MotorHW_SetRightSpeed(int speed)
+{
+    uint16_t pwm = clamp_pwm(abs(speed));
+
+    if(speed > 0) // forward
+    {
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, pwm);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);
+    }
+    else if(speed < 0) // reverse
+    {
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, pwm);
+    }
+    else
+    {
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_3, 0);
+        __HAL_TIM_SET_COMPARE(&htim3, TIM_CHANNEL_4, 0);
+    }
+}
+
+
+void MotorHW_StopAll(void)
+{
+    MotorHW_SetLeftSpeed(0);
+    MotorHW_SetRightSpeed(0);
+}
+
+
+/* ================= Initialization ================= */
+
+void MotorHW_Init(void)
+{
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_3);
+    HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
+
+    MotorHW_StopAll();
+}
+
+
+/* ================= High Level Driving ================= */
+
+void Drive_Forward(uint16_t pwm)
+{
+    MotorHW_SetLeftSpeed(pwm);
+    MotorHW_SetRightSpeed(pwm);
+}
+
+void Drive_Reverse(uint16_t pwm)
+{
+    MotorHW_SetLeftSpeed(-pwm);
+    MotorHW_SetRightSpeed(-pwm);
+}
+
+void Drive_TurnLeft(uint16_t pwm)
+{
+    MotorHW_SetLeftSpeed(-pwm);
+    MotorHW_SetRightSpeed(pwm);
+}
+
+void Drive_TurnRight(uint16_t pwm)
+{
+    MotorHW_SetLeftSpeed(pwm);
+    MotorHW_SetRightSpeed(-pwm);
+}
+
+void Drive_Stop(void)
+{
+    MotorHW_StopAll();
+}

@@ -1,0 +1,4 @@
+../Core/Src/freertos.c:97:6:MX_FREERTOS_Init	8	static
+../Core/Src/freertos.c:145:6:Motor_Task_Init	24	static
+../Core/Src/freertos.c:187:6:ObstDet_Task_Init	32	static
+../Core/Src/freertos.c:220:6:TrackUser_Task_Init	16	static

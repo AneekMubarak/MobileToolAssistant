@@ -1,0 +1,10 @@
+../Core/Src/motor_hw.c:9:24:clamp_pwm	16	static
+../Core/Src/motor_hw.c:32:6:MotorHW_SetLeftSpeed	24	static
+../Core/Src/motor_hw.c:53:6:MotorHW_SetRightSpeed	24	static
+../Core/Src/motor_hw.c:75:6:MotorHW_StopAll	8	static
+../Core/Src/motor_hw.c:84:6:MotorHW_Init	8	static
+../Core/Src/motor_hw.c:97:6:Drive_Forward	16	static
+../Core/Src/motor_hw.c:103:6:Drive_Reverse	16	static
+../Core/Src/motor_hw.c:109:6:Drive_TurnLeft	16	static
+../Core/Src/motor_hw.c:115:6:Drive_TurnRight	16	static
+../Core/Src/motor_hw.c:121:6:Drive_Stop	8	static
