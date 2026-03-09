@@ -59,14 +59,14 @@ UART_HandleTypeDef huart3;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 1024  * 4,
+  .stack_size = 1024 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
 osThreadId_t tofTaskHandle;
 const osThreadAttr_t tofTask_attributes = {
   .name = "tofTask",
-  .stack_size = 1024  * 4,
+  .stack_size = 1024  * 1,
   .priority = (osPriority_t) 5,
 };
 
@@ -96,6 +96,14 @@ uint8_t rangeStatus = 0;
 int status = 0;
 uint64_t dwm_distance = 0;
 
+int count_uwb = 0;
+uint64_t uwb_dist_running_sum = 0;
+
+
+//uint64_t distance_records[1000] = {0};
+uint64_t average_distance = 0;
+//uint8_t device_id[4] = {0};
+int tof_counter = 0;
 
 /* USER CODE END PV */
 
@@ -518,7 +526,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(CS_I2C_SPI_GPIO_Port, CS_I2C_SPI_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, OTG_FS_PowerSwitchOn_Pin|DWM1_CS_N_Pin|DWM2_CS_N_Pin, GPIO_PIN_SET);
@@ -540,12 +548,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(CS_I2C_SPI_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OTG_FS_PowerSwitchOn_Pin DWM1_CS_N_Pin DWM2_CS_N_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin|DWM1_CS_N_Pin|DWM2_CS_N_Pin;
+  /*Configure GPIO pin : OTG_FS_PowerSwitchOn_Pin */
+  GPIO_InitStruct.Pin = OTG_FS_PowerSwitchOn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  HAL_GPIO_Init(OTG_FS_PowerSwitchOn_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PDM_OUT_Pin */
   GPIO_InitStruct.Pin = PDM_OUT_Pin;
@@ -568,11 +576,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : DWM1_CS_N_Pin DWM2_CS_N_Pin */
+  GPIO_InitStruct.Pin = DWM1_CS_N_Pin|DWM2_CS_N_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : DWM3_CS_N_Pin */
   GPIO_InitStruct.Pin = DWM3_CS_N_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(DWM3_CS_N_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BOOT1_Pin */
@@ -628,36 +643,38 @@ int _write(int file, char *ptr, int len)
 
 void TimeOfFlighMeausure(void *argument) {
 
-	 while (sensorState == 0){
-		 status = VL53L1X_BootState(dev, &sensorState);
-		 osDelay(2);
-	  }
-
-	  // Initialize sensor
-	 status = VL53L1X_SensorInit(dev);
-	  // Configure ranging
-	 status = VL53L1X_SetDistanceMode(dev, 1);      // 1=short, 2=long
-	 status = VL53L1X_SetTimingBudgetInMs(dev, 100);
-	 status = VL53L1X_SetInterMeasurementInMs(dev, 100);
-	 status = VL53L1X_StartRanging(dev);
+//	 while (sensorState == 0){
+//		 status = VL53L1X_BootState(dev, &sensorState);
+//		 osDelay(2);
+//	  }
+//
+//	  // Initialize sensor
+//	 status = VL53L1X_SensorInit(dev);
+//	  // Configure ranging
+//	 status = VL53L1X_SetDistanceMode(dev, 1);      // 1=short, 2=long
+//	 status = VL53L1X_SetTimingBudgetInMs(dev, 100);
+//	 status = VL53L1X_SetInterMeasurementInMs(dev, 100);
+//	 status = VL53L1X_StartRanging(dev);
 
 	for(;;){
 		// tof
-		while (dataReady == 0) {
-			VL53L1X_CheckForDataReady(dev, &dataReady);
-			osDelay(1);
-		}
+//		while (dataReady == 0) {
+//			VL53L1X_CheckForDataReady(dev, &dataReady);
+//			osDelay(1);
+//		}
+//
+//		dataReady = 0;
+//
+//		// Read distance
+//		VL53L1X_GetDistance(dev, &distance);
+//		VL53L1X_GetRangeStatus(dev, &rangeStatus);
+//
+//		// Clear interrupt
+//		VL53L1X_ClearInterrupt(dev);
 
-		dataReady = 0;
+		tof_counter++;
 
-		// Read distance
-		VL53L1X_GetDistance(dev, &distance);
-		VL53L1X_GetRangeStatus(dev, &rangeStatus);
-
-		// Clear interrupt
-		VL53L1X_ClearInterrupt(dev);
-
-	    osDelay(100);
+	    osDelay(5);
 
 	}
 }
@@ -676,16 +693,19 @@ void StartDefaultTask(void *argument)
   /* init code for USB_HOST */
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
-  uint8_t device_id[4] = {0};
+//  uint8_t device_id[4] = {0};
 //  uint8_t sys_event_status_reg[5] = {0};
 
   uint8_t clear_tx[5] = {0};
   clear_tx[0] = 0xF0;  // only TX bits
 
 
+
+  dwm_reset(&dwm2);
   dwm_reset(&dwm1);
 
-  dwm_configure(&dwm1);
+
+  dwm_configure(&dwm2);
 
   // Stop SPI
   HAL_SPI_DeInit(&hspi1);
@@ -701,26 +721,53 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
 
+	HAL_GPIO_WritePin(dwm1.cs_port, dwm1.cs_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(dwm2.cs_port, dwm2.cs_pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(dwm3.cs_port, dwm3.cs_pin, GPIO_PIN_SET);
+
+	osDelay(1);
+
+
 	test_counter++;
-	dwm_read_reg(&dwm1, 0x00, device_id, 4);
-	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
+	dwm_read_reg(&dwm2, 0x00, device_id, 4);
+//	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
 
-//	uint8_t payload[4] = {0x1,0x2,0xCC,0xDD}
 
+
+
+//	uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
+//
 //	payload[0]++;
-
+//
 //	if(!send_frame(&dwm1,payload,4)){
 //		txfrs_error_count++;
 //	}
 
 //	start_ranging(&dwm1,&uwb_dist_cm,&t_prop,&t_reply);
-	uwb_return = robot_ranging_step(&dwm1, &uwb_dist_cm);
+//	uwb_return = robot_ranging_step(&dwm2, &uwb_dist_cm);
+//
+//	if(uwb_return){
+//
+//		if(count_uwb<100){
+//			uwb_dist_running_sum += uwb_dist_cm;
+////			count_uwb++;
+//		}
+//
+//		if(count_uwb >= 100){
+//			average_distance = uwb_dist_running_sum/100;
+//		}
+//		count_uwb++;
+//
+//
+//
+//
+//	}
 
 //	uint8_t rx_buffer[4];
 //	dwm_receive(&dwm1, rx_buffer, 4);
 
 //	robot_uwb_task(&dwm1);
-    osDelay(100);
+    osDelay(10);
   }
   /* USER CODE END 5 */
 }

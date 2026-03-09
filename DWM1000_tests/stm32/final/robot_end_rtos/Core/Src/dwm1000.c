@@ -24,8 +24,22 @@ extern SPI_HandleTypeDef hspi1;
 static uint8_t retries = 0;
 #define MAX_RETRIES 3
 
-//#define ANTENNA_DELAY 32000ULL
-#define ANTENNA_DELAY 32835.0   // calibrated at 0.4m
+//#define ANTENNA_DELAY 33008.6534  // NO SCRATCH
+#define ANTENNA_DELAY 32889.296
+//#define ANTENNA_DELAY 32948.97481
+
+
+//#define ANTENNA_DELAY 32827.48625
+
+
+#define DW_SPI_TIMEOUT HAL_MAX_DELAY   // milliseconds
+  // NO SCRATCH
+
+
+// Reading for 7.94m with default config is 16,373cm  --> 33 000
+
+//#define ANTENNA_DELAY 32835.0   // calibrated at 0.4m
+
 
 static robot_state_t robot_state = RSTATE_SEND_POLL;
 
@@ -33,12 +47,12 @@ static robot_state_t robot_state = RSTATE_SEND_POLL;
 void dwm_reset(DWM_Module *module) {
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
 //    HAL_Delay(1);  // 1 ms minimum
-    osDelay(1);
+    osDelay(10);
 
     // Release  to Hi-Z because open-drain
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_SET);
 //    HAL_Delay(10); // Allow DW1000 to boot
-    osDelay(1);
+    osDelay(10);
 }
 
 
@@ -63,8 +77,8 @@ void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t le
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
 
-    HAL_SPI_Transmit(&hspi1, &header, 1, HAL_MAX_DELAY);
-    HAL_SPI_Receive(&hspi1, data, len, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(&hspi1, &header, 1, DW_SPI_TIMEOUT);
+    HAL_SPI_Receive(&hspi1, data, len, DW_SPI_TIMEOUT);
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 }
@@ -90,14 +104,15 @@ void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t le
     uint8_t header = 0x80 | (reg_id & 0x3F);
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
     // Sed header
-    HAL_SPI_Transmit(&hspi1, &header, 1, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(&hspi1, &header, 1, DW_SPI_TIMEOUT);
     // Send payload directly from caller buffer
     if (len > 0)
     {
-        HAL_SPI_Transmit(&hspi1, data, len, HAL_MAX_DELAY);
+        HAL_SPI_Transmit(&hspi1, data, len, DW_SPI_TIMEOUT);
     }
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+
 }
 
 
@@ -125,93 +140,95 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
     }
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi1, header, header_len, HAL_MAX_DELAY);
-    HAL_SPI_Transmit(&hspi1, data, len, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
-}
-
-
-void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
-
-	uint8_t header[3];
-    uint8_t header_len = 1;
-
-    header[0] = reg_id & 0x3F;
-
-    if (subaddr != 0xFFFF) {
-        header[0] |= 0x40;
-
-        header[1] = subaddr & 0x7F;
-        header_len = 2;
-
-        if (subaddr > 0x7F) {
-            header[1] |= 0x80;
-            header[2] = subaddr >> 7;
-            header_len = 3;
-        }
-    }
-
-    //combine header + dummy
-    uint8_t tx[header_len + len];
-    uint8_t rx[header_len + len];
-
-    memcpy(tx, header, header_len);
-    memset(tx + header_len, 0, len);
-
-    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-    HAL_SPI_TransmitReceive(&hspi1, tx, rx, header_len + len, HAL_MAX_DELAY);
+    HAL_SPI_Transmit(&hspi1, header, header_len, DW_SPI_TIMEOUT);
+    HAL_SPI_Transmit(&hspi1, data, len, DW_SPI_TIMEOUT);
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
 
-    memcpy(data, rx + header_len, len);
 }
 
 
 //void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 //
-//    uint8_t header[3];
+//	uint8_t header[3];
 //    uint8_t header_len = 1;
 //
-//    // First header byte (READ)
 //    header[0] = reg_id & 0x3F;
 //
-//    if (subaddr != 0xFFFF)
-//    {
-//        header[0] |= 0x40;  // subaddress flag
+//    if (subaddr != 0xFFFF) {
+//        header[0] |= 0x40;
 //
-//        if (subaddr <= 0x7F)
-//        {
-//            header[1] = subaddr & 0x7F;
-//            header_len = 2;
-//        }
-//        else
-//        {
-//            header[1] = (subaddr & 0x7F) | 0x80;
-//            header[2] = (subaddr >> 7) & 0xFF;
+//        header[1] = subaddr & 0x7F;
+//        header_len = 2;
+//
+//        if (subaddr > 0x7F) {
+//            header[1] |= 0x80;
+//            header[2] = subaddr >> 7;
 //            header_len = 3;
 //        }
 //    }
 //
+//    //combine header + dummy
+//    uint8_t tx[header_len + len];
+//    uint8_t rx[header_len + len];
+//
+//    memcpy(tx, header, header_len);
+//    memset(tx + header_len, 0, len);
+//
 //    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-//
-//    // Send header
-//    HAL_SPI_Transmit(&hspi1, header, header_len, HAL_MAX_DELAY);
-//
-//    // Read data directly into user buffer
-//    if (len > 0)
-//    {
-//        uint8_t dummy_tx = 0x00;
-//        for (uint16_t i = 0; i < len; i++)
-//        {
-//            HAL_SPI_TransmitReceive(&hspi1,&dummy_tx, &data[i],1, HAL_MAX_DELAY);
-//        }
-//    }
-//
+//    HAL_SPI_TransmitReceive(&hspi1, tx, rx, header_len + len, HAL_MAX_DELAY);
 //    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+//
+//    memcpy(data, rx + header_len, len);
 //}
 
+//
+void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
+
+    uint8_t header[3];
+    uint8_t header_len = 1;
+
+    // First header byte (READ)
+    header[0] = reg_id & 0x3F;
+
+    if (subaddr != 0xFFFF)
+    {
+        header[0] |= 0x40;  // subaddress flag
+
+        if (subaddr <= 0x7F)
+        {
+            header[1] = subaddr & 0x7F;
+            header_len = 2;
+        }
+        else
+        {
+            header[1] = (subaddr & 0x7F) | 0x80;
+            header[2] = (subaddr >> 7) & 0xFF;
+            header_len = 3;
+        }
+    }
+
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
+
+    // Send header
+    HAL_SPI_Transmit(&hspi1, header, header_len, DW_SPI_TIMEOUT);
+
+    // Read data directly into user buffer
+    if (len > 0)
+    {
+        uint8_t dummy_tx = 0x00;
+        for (uint16_t i = 0; i < len; i++)
+        {
+            HAL_SPI_TransmitReceive(&hspi1,&dummy_tx, &data[i],1, DW_SPI_TIMEOUT);
+        }
+    }
+
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+
+}
 
 
-
+//
+//
 void dwm_configure(DWM_Module* module){
 
 	//1. AGC Tune1 - 2 octets
@@ -230,8 +247,8 @@ void dwm_configure(DWM_Module* module){
 	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
 
 	//	//3. DRX_Tune_2 (4 oct)
-//	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
-    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31}; // PAC 8, 16Mhz
+//    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35}; // PAC 32, 16Mhz
 //    0x31 3B 00 6B
     // for PAC 8 -> 64Mhz Prf
 //    uint8_t new_drx2_config[4] = {0x6b,0x00,0x3b,0x31};
@@ -311,8 +328,125 @@ void dwm_configure(DWM_Module* module){
 //	  dwm_write_reg(module,0x1f,chan_ctrl_reg,4)
 
 	  // Antenna Delay
-	  uint16_t ant_delay = 16456;
+//	  uint16_t ant_delay = 16456;
 }
+
+
+//void dwm_configure(DWM_Module* module){
+//
+//	//1. AGC Tune1 - 2 octets
+//	uint8_t current_agc1_config[2] = {0};
+//	dwm_read_reg_sub(module,0x23,0x04,current_agc1_config,2);
+//
+//	current_agc1_config[0] = 0x70;
+//	current_agc1_config[1] = 0x88;
+//
+//	dwm_write_reg_sub(module, 0x23,0x04,current_agc1_config,2);
+//	// dwm_read_reg_sub(module, 0x23,0x04,current_agc1_config,2);
+//
+//
+//	//2.AGC Tune2 (4 oct)
+//	uint8_t new_agc2_config[4] = {0x07,0xa9,0x02,0x25};
+//	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
+//
+//    // AGC Tune3
+//    uint8_t agc_tune3[2] = {0x55, 0x00};
+//    dwm_write_reg_sub(module, 0x23, 0x12, agc_tune3, 2);
+//
+//    // DRX_Tune 0b
+//    uint8_t drx_tune0b[2] = {0x06, 0x00}; // non-SFD, good performance apparently, must check
+//    dwm_write_reg_sub(module, 0x27, 0x02, drx_tune0b, 2);
+//
+//    // DRX_Tune 1a
+//    uint8_t drx_tune1a[2] = {0x87, 0x00}; //this is for 16Mhz
+//    dwm_write_reg_sub(module, 0x27, 0x04, drx_tune1a, 2);
+//
+//    // DRX_Tune 1b
+//    uint8_t drx_tune1b[2] = {0x20, 0x00}; //this is for 850 kbps
+//    dwm_write_reg_sub(module, 0x27, 0x06, drx_tune1b, 2);
+//
+//		//3. DRX_Tune_2 (4 oct)
+//    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+//	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
+//
+//
+//	//4. NTM
+//	uint8_t lde_cfg_1[1] = {0};
+//	dwm_read_reg_sub(module, 0x2E,0x0806,lde_cfg_1,1);
+//	lde_cfg_1[0] = (lde_cfg_1[0] & ~0x1F) | (0x0D & 0x1F);
+//	dwm_write_reg_sub(module, 0x2E,0x0806,lde_cfg_1,1);
+//
+////	5.LDE Config 2
+//	uint8_t lde_cfg_2[2] = {0x07,0x16};
+//	dwm_write_reg_sub(module, 0x2E,0x1806,lde_cfg_2,2);
+//
+//	//6. Tx Power
+//	uint8_t tx_power_ctrl[4] ={0x48,0x28,0x08,0x0e};
+//	dwm_write_reg_sub(module, 0x1E,0x00,tx_power_ctrl,4);
+//
+//
+////	7. RF_TXCTRL (3 oct)
+////	 DATASHEET_UNCLEAR (refer pg 153)
+////	 The data sheet says set 24 bits,  last oct is reserved and set to 0x00 but when reading it has 0xde, might have to set to 0x00 of issues
+//	uint8_t rf_txctrl[3] = {0xe3,0x3f,0x1e};
+//	dwm_write_reg_sub(module, 0x28,0x0c,rf_txctrl,3);
+//
+////	8.TC_PGDELAY (1 oct)
+//	uint8_t tc_pgdelay[1] = {0xc0};
+//	dwm_write_reg_sub(module, 0x2A,0x0b,tc_pgdelay,1);
+//
+////	9.PLL_TUNE (1 oct)
+//	uint8_t fs_pll_tune[1] = {0xbe};
+//	dwm_write_reg_sub(module, 0x2b,0x0b,fs_pll_tune,1);
+//
+//    // TX_FCTRL config - we set PRF, bit rate, and length of preamble over here
+//    uint8_t tx_fctrl[5] = {0};
+//    dwm_read_reg(module, 0x08, tx_fctrl, 5);
+//
+//    tx_fctrl[1] = (tx_fctrl[1] & 0x9F) | (0x20); //setting bit rate here to 850 kbps, was 6.8 Mbps before
+//    tx_fctrl[2] = (tx_fctrl[2] & 0xC0) | (0x09); //setting PRF to 16 Mhz
+//
+//    // SET PSR to 10
+//    tx_fctrl[2] = (tx_fctrl[2] & 0xc3) | (0x08); // 1024 preamble length
+//
+//    dwm_write_reg(module, 0x08, tx_fctrl, 5);
+//
+//
+////	10. LDE_LOAD
+//	//NOTE: refer page 176 for ldeload instruction if waking up from sleep/deep sleep
+//
+//	//L1 - write to PMSC Control0 lower 16 bits
+//	uint8_t pmsc_ctrl_0_lower_2_oct[2] = {0x01,0x03};
+//	dwm_write_reg_sub(module, 0x36, 0x00, pmsc_ctrl_0_lower_2_oct, 2);
+//
+//	//L2 - set OTP control LDELOAD bit (write entire reg)
+//	uint8_t otp_control[2] = {0x00,0x80};
+//	dwm_write_reg_sub(module, 0x2d, 0x06, otp_control, 2);
+//
+//	//Wait 150us
+//	osDelay(5);
+//
+//	// L-3
+//	uint8_t pmsc_ctrl_0_lower_2_oct_L3[2] = {0x00,0x02};
+//	dwm_write_reg_sub(module, 0x36, 0x00, pmsc_ctrl_0_lower_2_oct_L3, 2);
+//
+//
+//	// 10.LDO TUNE
+//		//NOTE: can be skipped ig
+//
+//	// ADDDITIONAL - (not part of the recommended configs)
+//
+//	//To fix the CLKPLL_LL bit not locking issue in reg 0x0f, the PLLDT bit of 0x24 must be set
+//
+//	  uint8_t ec_ctrl_reg[4] = {0};
+//	  dwm_read_reg_sub(module, 0x24,0x00,ec_ctrl_reg,4);
+//	  ec_ctrl_reg[0] = ec_ctrl_reg[0]|0x04;
+//	  dwm_write_reg_sub(module, 0x24,0x00,ec_ctrl_reg,4);
+//
+//	  osDelay(10);
+//
+//}
+
 
 void dwm_basic_transmit(DWM_Module* module){
 	/*
@@ -385,6 +519,12 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
 
     int tflen = 0;
 
+    int rxdfr = 0;
+    int rxcfg = 0;
+    int lde_done = 0;
+
+
+
 
     // ENABLE Rx
 //    dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
@@ -394,13 +534,26 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
 
     // now dw1000 is waiting for preamble
     // Add timeouts here ig
-    int tries = 30000;
+    int tries = 20;
     for (int i=0;i<=tries;i++){
         dwm_read_reg(module, 0x0F, sys_event_status_reg, 5);
 
-        if(sys_event_status_reg[1]&0x20){ // RXDFR is high
+        rxdfr = sys_event_status_reg[1]&0x20;
+        rxcfg = sys_event_status_reg[1]&0x40;
+        lde_done = sys_event_status_reg[1]&0x04;
+
+
+
+        if(rxdfr && rxcfg && lde_done){ // RXDFR is high
             dwm_read_reg(module, 0x10,rx_frame_info_reg,4);
-            tflen = rx_frame_info_reg[0]&0x7f; //tflen mask
+            tflen = rx_frame_info_reg[0]&0x7f; //tflen
+
+            if(tflen != 8){
+            	return false;
+            }
+
+
+
             dwm_read_reg(module, 0x11,buffer,tflen-2); // no need CRC bits --> write data to buffer
             // PROBLEM: can corrupt mem if buff too small
             // Better to come up with a standard tflen across all DWMs and set to max.
@@ -415,7 +568,7 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
         }
 
 //        HAL_Delay(1);
-//        osDelay(1);
+        osDelay(1);
 
     }
     // force RX reset
@@ -431,6 +584,8 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
     return false;
 
 }
+
+
 
 //------------------
 // Two Way Ranging
@@ -573,73 +728,6 @@ bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 
 
 
-//void start_ranging(DWM_Module* module, uint64_t* distance, uint64_t* t_prop, uint64_t* t_reply){
-//
-//    static int receive = 0;
-//    static int sent = 0;
-////    uint64_t t_reply = 0; /// de.lay time of the remote
-//    static uint64_t tx_timestamp = 0;
-//    static uint64_t rx_timestamp = 0;
-//    uint64_t  distance_cm = 0;
-//
-//
-////    uint8_t sys_ctrl_reg[4] = {0};
-//
-//    uint8_t rx_buff[6];
-//    uint8_t tx_buff[4] = {0xAA, 0xBB, 0xCC, 0xEE};
-//
-//    if(!sent){
-//        sent = send_frame(module, tx_buff, 4);
-//
-//        if(sent){
-//
-//        	// save timestamp
-//            // ENABLE Rx
-//        	tx_timestamp = read_timestamp(module, 0x17);
-////            dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
-//            uint8_t sys_ctrl_reg[4] = {0};
-//            sys_ctrl_reg[1] |= (1 << 0); // RXENAB
-//            dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
-//        }
-//    }
-//    else if(sent && !receive){
-//        if(dwm_receive(module, rx_buff, 6)){
-//            receive = 1;
-//            rx_timestamp = read_timestamp(module, 0x15);
-//            process_response(rx_buff,6, t_reply);
-//
-//        }
-//    }
-//
-//    if(sent && receive){
-//    	// done
-//    	uint64_t t_rtt = ts_diff(rx_timestamp,tx_timestamp);
-//
-////    	uint64_t t_prop = 0.5*(t_rtt - t_reply);
-////    	uint64_t t_prop = (t_rtt - t_reply) >> 1;
-//    	if (t_rtt > *t_reply) {
-//    	    *t_prop = (t_rtt - *t_reply) >> 1;
-//
-//    	    if (*t_prop > ANTENNA_DELAY)
-//    	    {
-//    	        *t_prop -= ANTENNA_DELAY;
-//    	    }
-////    	    distance_cm = (t_prop * 469176) / 1000000;
-//    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
-////    	    distance_cm = (*t_prop * 469176ULL) / 1000000ULL;
-////    	    *distance = distance_cm;
-//
-//    	    uint64_t offset = 360;
-//    	    *distance = distance_cm-offset;;
-//
-//    	}
-//
-//
-//        // reset for next round
-//        sent = 0;
-//        receive = 0;
-//    }
-//}
 
 
 bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
@@ -684,33 +772,6 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
             break;
         }
 
-        //***********************888
-//        case RSTATE_WAIT_RESPONSE_1:
-//        {
-//        	// get the first responcse and record t_reply1
-//            // Try receive with timeout
-//            if (dwm_receive(module, rx_buff, 6)) {
-//
-//                // Check response contents
-//                if (!process_response(rx_buff, 6, &t_reply_1)) {
-//                    // Bad response format
-//                    robot_state = RSTATE_ERROR_RECOVERY;
-//                    return false;
-//                }
-//
-//                // Save RX time
-//                t_rx_resp = read_timestamp(module, 0x15);
-//
-////                // Compute range
-////                robot_state = RSTATE_COMPUTE;
-//
-//                // send poll 2
-//                robot_state = RSTATE_SEND_POLL_2;
-//            }else{
-//            	robot_state = RSTATE_ERROR_RECOVERY;
-//            }
-//            break;
-//        }
 
         case RSTATE_WAIT_RESPONSE_1:
         {
@@ -820,32 +881,7 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
             break;
         }
 
-        // ****************************
-//        case RSTATE_COMPUTE:
-//        {
-//            // Compute RTT, propagation
-//            uint64_t t_rtt = ts_diff(t_rx_resp, t_tx_poll);
-//
-//            if (t_rtt <= t_reply_1) {
-//                // impossible -- clock or receive error
-//                robot_state = RSTATE_ERROR_RECOVERY;
-//                return false;
-//            }
-//
-//            uint64_t t_prop = (t_rtt - t_reply_1) >> 1; // div by 2
-//            if (t_prop > ANTENNA_DELAY) {
-//                t_prop -= ANTENNA_DELAY;
-//            }
-//
-//            uint64_t distance = (t_prop * 469176ULL) / 1000000ULL;
-//
-//            // Output
-//            *distance_cm_out = distance-300;
-//
-//            // Next poll
-//            robot_state = RSTATE_SEND_POLL;
-//            return true; // means new distance is available
-//        }
+
         case RSTATE_COMPUTE:
         {
             uint64_t t_rtt_1  = ts_diff(t_rx_resp,   t_tx_poll);

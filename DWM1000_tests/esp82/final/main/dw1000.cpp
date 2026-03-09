@@ -222,6 +222,8 @@ void dwm_configure(DWM_Module* module){
 //    0x31 3B 00 6B
     // for PAC 8 -> 64Mhz Prf
     // uint8_t new_drx2_config[4] = {0x6b,0x00,0x3b,0x31};
+	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
+
 
 	//4. NTM
 	uint8_t lde_cfg_1[1] = {0};
@@ -443,8 +445,8 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 
     // NEW
     // Set PRF to 64Mhz (comment out for 16Mhz)
-    tx_frame_control[1] &= 0b11001111;
-    tx_frame_control[1] |= 0b00100000;
+    // tx_frame_control[1] &= 0b11001111;
+    // tx_frame_control[1] |= 0b00100000;
 
     dwm_write_reg(module, 0x08, tx_frame_control, 5);
 
@@ -719,6 +721,7 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
     {
         case REMOTE_WAIT_M1:
         {
+            // Serial.println("In WAIT M1");
             if(*isr_flag)
             {   
                 *isr_flag = false;
@@ -762,7 +765,7 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
             {
                 // optional retry timeout handling
                 if(++retry_counter > MAX_RETRIES)
-                {
+                {   
                     remote_reset_session(module);
                     // Serial.println("RX Timeout: Returning to REMOTE_WAIT_M1");
                     break;
@@ -801,6 +804,8 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
             dwm_read_reg(module, 0x08, tx_frame_control, 5);
             tx_frame_control[0] &= 0x80;
             tx_frame_control[0] |= (6 + 2);
+            dwm_write_reg(module, 0x08, tx_frame_control, 5);
+
 
             //Trigger delayed TX
             uint8_t sys_ctrl[4] = {0};
@@ -953,6 +958,8 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
             dwm_read_reg(module, 0x08, tx_frame_control, 5);
             tx_frame_control[0] &= 0x80;
             tx_frame_control[0] |= (6 + 2);
+            dwm_write_reg(module, 0x08, tx_frame_control, 5);
+
 
             //Trigger delayed TX
             uint8_t sys_ctrl[4] = {0};

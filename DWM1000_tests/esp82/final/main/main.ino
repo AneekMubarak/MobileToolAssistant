@@ -32,7 +32,7 @@ void setup() {
     int countdown=5;
     for (int i = countdown; i >= 0 ; i--){
         Serial.println(i);
-        delay(1000);
+        delay(10);
     }
     SPI.begin();
     SPI.setDataMode(SPI_MODE0);
@@ -44,7 +44,7 @@ void setup() {
 
     dwm_configure(&dwm1);
 
-    delay(2000);
+    delay(1000);
 
 
 
