@@ -72,7 +72,10 @@ const osThreadAttr_t tofTask_attributes = {
 
 
 int test_counter = 0;
-uint8_t device_id[4] = {0};
+uint8_t device_id_dwm1[4] = {0};
+uint8_t device_id_dwm2[4] = {0};
+
+
 uint8_t device_id_low[2] = {0};
 int txfrs_error_count = 0;
 uint8_t sys_event_status_reg[5] = {0};
@@ -81,7 +84,10 @@ uint64_t poll_ts = 0;
 uint8_t rx_buffer[4] = {0};
 uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
 
-uint64_t uwb_dist_cm = 0;
+uint64_t uwb_dist_cm_dwm1 = 0;
+uint64_t uwb_dist_cm_dwm2 = 0;
+
+
 uint64_t t_prop = 0;
 uint64_t t_reply = 0;
 
@@ -99,6 +105,18 @@ uint64_t dwm_distance = 0;
 int count_uwb = 0;
 uint64_t uwb_dist_running_sum = 0;
 
+
+int dwm1_count = 0;
+int dwm2_count = 0;
+
+int dwm1_running_sum = 0;
+int dwm2_running_sum = 0;
+
+int dwm1_avg_dist = 0;
+int dwm2_avg_dist = 0;
+
+
+#define UWB_CALIB_TEST_COUNT 1000
 
 //uint64_t distance_records[1000] = {0};
 uint64_t average_distance = 0;
@@ -132,15 +150,19 @@ DWM_Module dwm1 = {
     .cs_port = DWM1_CS_N_GPIO_Port,
     .cs_pin  = DWM1_CS_N_Pin,
     .reset_port = DWM1_RESET_N_GPIO_Port,
-    .reset_pin  = DWM1_RESET_N_Pin
+    .reset_pin  = DWM1_RESET_N_Pin,
+	.antenna_delay = 0
 };
+
 
 DWM_Module dwm2 = {
     .cs_port = DWM2_CS_N_GPIO_Port,
     .cs_pin  = DWM2_CS_N_Pin,
     .reset_port = DWM2_RESET_N_GPIO_Port,
-    .reset_pin  = DWM2_RESET_N_Pin
+    .reset_pin  = DWM2_RESET_N_Pin,
+	.antenna_delay = 32889.296
 };
+
 
 DWM_Module dwm3 = {
     .cs_port = DWM3_CS_N_GPIO_Port,
@@ -148,6 +170,14 @@ DWM_Module dwm3 = {
     .reset_port = DWM3_RESET_N_GPIO_Port,
     .reset_pin  = DWM3_RESET_N_Pin
 };
+
+
+typedef enum {
+    ANCHOR_LEFT,
+    ANCHOR_RIGHT
+} AnchorActive;
+
+AnchorActive active_anchor = ANCHOR_LEFT;
 
 /* USER CODE END 0 */
 
@@ -704,7 +734,7 @@ void StartDefaultTask(void *argument)
   dwm_reset(&dwm2);
   dwm_reset(&dwm1);
 
-
+  dwm_configure(&dwm1);
   dwm_configure(&dwm2);
 
   // Stop SPI
@@ -716,57 +746,86 @@ void StartDefaultTask(void *argument)
   // Re-init SPI
   HAL_SPI_Init(&hspi1);
 
+  int uwb_left_valid = 0;
+  int uwb_right_valid = 0;
+
+  // for calibration purposes
+
+//  int dwm1_count = 0;
+//  int dwm2_count = 0;
+//
+//  int dwm1_running_sum = 0;
+//  int dwm2_running_sum = 0;
+//
+//  int dwm1_avg_dist = 0;
+//  int dwm2_avg_dist = 0;
+
 
   /* Infinite loop */
   for(;;)
   {
 
-	HAL_GPIO_WritePin(dwm1.cs_port, dwm1.cs_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(dwm2.cs_port, dwm2.cs_pin, GPIO_PIN_SET);
-	HAL_GPIO_WritePin(dwm3.cs_port, dwm3.cs_pin, GPIO_PIN_SET);
-
-	osDelay(1);
-
-
+	bool finished = false;
 	test_counter++;
-	dwm_read_reg(&dwm2, 0x00, device_id, 4);
-//	dwm_read_reg_sub(&dwm1, 0x40, 0x02, device_id_low, 2);
+	dwm_read_reg(&dwm1, 0x00, device_id_dwm1, 4);
+	dwm_read_reg(&dwm2, 0x00, device_id_dwm2, 4);
+
+	if (active_anchor == ANCHOR_LEFT){
+
+		finished = robot_ranging_step(&dwm1,&uwb_dist_cm_dwm1);
+
+		if(finished){
+			uwb_left_valid = 1;
+			active_anchor = ANCHOR_RIGHT;
+
+			if(++dwm1_count < UWB_CALIB_TEST_COUNT){
+				dwm1_running_sum += uwb_dist_cm_dwm1;
+			}
+
+			if(dwm1_count == UWB_CALIB_TEST_COUNT){
+				dwm1_avg_dist = dwm1_running_sum/UWB_CALIB_TEST_COUNT;
+			}
+		}
+
+	}
+	else{
+		finished  = robot_ranging_step(&dwm2,&uwb_dist_cm_dwm2);
+		if(finished){
+			uwb_right_valid = 1;
+			active_anchor = ANCHOR_LEFT;
+
+			if(++dwm2_count < UWB_CALIB_TEST_COUNT){
+				dwm2_running_sum += uwb_dist_cm_dwm2;
+			}
+
+			if(dwm2_count == UWB_CALIB_TEST_COUNT){
+				dwm2_avg_dist = dwm2_running_sum/UWB_CALIB_TEST_COUNT;
+			}
 
 
+		}
 
+	}
 
-//	uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
+//		uwb_return = robot_ranging_step(&dwm1, &uwb_dist_cm_dwm2);
 //
-//	payload[0]++;
+//		if(uwb_return){
 //
-//	if(!send_frame(&dwm1,payload,4)){
-//		txfrs_error_count++;
-//	}
-
-//	start_ranging(&dwm1,&uwb_dist_cm,&t_prop,&t_reply);
-//	uwb_return = robot_ranging_step(&dwm2, &uwb_dist_cm);
+//			if(count_uwb<100){
+//				uwb_dist_running_sum += uwb_dist_cm_dwm2;
+//	//			count_uwb++;
+//			}
 //
-//	if(uwb_return){
+//			if(count_uwb >= 100){
+//				average_distance = uwb_dist_running_sum/100;
+//			}
+//			count_uwb++;
 //
-//		if(count_uwb<100){
-//			uwb_dist_running_sum += uwb_dist_cm;
-////			count_uwb++;
+//
 //		}
-//
-//		if(count_uwb >= 100){
-//			average_distance = uwb_dist_running_sum/100;
-//		}
-//		count_uwb++;
-//
-//
-//
-//
-//	}
 
-//	uint8_t rx_buffer[4];
-//	dwm_receive(&dwm1, rx_buffer, 4);
 
-//	robot_uwb_task(&dwm1);
+
     osDelay(10);
   }
   /* USER CODE END 5 */

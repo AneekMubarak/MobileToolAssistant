@@ -25,7 +25,7 @@ static uint8_t retries = 0;
 #define MAX_RETRIES 3
 
 //#define ANTENNA_DELAY 33008.6534  // NO SCRATCH
-#define ANTENNA_DELAY 32889.296
+//#define ANTENNA_DELAY 32889.296
 //#define ANTENNA_DELAY 32948.97481
 
 
@@ -897,7 +897,7 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
                           / (rtt1 + rtt2 + reply1 + reply2);
 
 
-            t_prop -= ANTENNA_DELAY;
+            t_prop -= module->antenna_delay;
             if (t_prop < 0) {
                 robot_state = RSTATE_ERROR_RECOVERY;
                 return false;
