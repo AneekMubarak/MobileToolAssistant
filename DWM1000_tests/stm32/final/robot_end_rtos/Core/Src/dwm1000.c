@@ -591,7 +591,7 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out)
 //            uint64_t t_rtt_2  = ts_diff(t_rx_resp_2, t_tx_poll_2);
             uint64_t t_rtt_2  = t_rtt_2_from_remote;
 
-            uint64_t t_reply_2 = t_tx_poll_2-t_rx_resp;
+            uint64_t t_reply_2 = ts_diff(t_tx_poll_2,t_rx_resp);
 
 
             // DS-TWR: t_prop = (rtt1*rtt2 - reply1*reply2) / (rtt1+rtt2+reply1+reply2)
@@ -647,49 +647,10 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out)
 }
 
 
-//UwbPoseResult calculate_user_pose(float dL, float dR, float baseline_cm){
-//
-//    UwbPoseResult result = {0};
-//    if (dL <= 0.0f || dR <= 0.0f || baseline_cm <= 0.0f) {
-//        result.valid = 0;
-//        return result;
-//    }
-//
-//    float B = baseline_cm;
-//
-//    // lateral offset from center
-//    float x = (dL*dL - dR*dR) / (2.0f * B);
-//
-//    // forward distance
-//    float inside = dL*dL - (x + B/2.0f)*(x + B/2.0f);
-//
-//    if (inside < 0.0f) {
-//        inside = 0.0f;   // clamp due to measurement noise
-//    }
-//
-//    float y = sqrtf(inside);
-//
-//    // center-to-user distance
-//    float range = sqrtf(x*x + y*y);
-//
-//    // angle relative to robot forward axis
-//    float angle_deg = atan2f(x, y) * RAD_TO_DEG;
-//
-//    result.x_cm = x;
-//    result.y_cm = y;
-//    result.range_cm = range;
-//    result.angle_deg = angle_deg;
-//    result.valid = 1;
-//
-//    return result;
-//}
-//
-
-
 /**
  * Calculate remote position relative to robot center
  *
- * Coordinate system (top view):
+ * Coordinate system
  *
  *              ^ Y (forward)
  *              |
@@ -705,15 +666,11 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out)
  *   90°  = straight ahead
  *   180° = directly left
  *
- * @param dist_left_cm   Distance from LEFT anchor (dwm1) to remote
- * @param dist_right_cm  Distance from RIGHT anchor (dwm2) to remote
- * @return RemotePosition struct with distance, angle, and validity flag
  */
 RemotePosition calculate_remote_position(float dist_left_cm, float dist_right_cm)
 {
     RemotePosition result = {0};
 
-    // Validate inputs
     if (dist_left_cm <= 0.0f || dist_right_cm <= 0.0f) {
         result.valid = 0;
         return result;
@@ -723,25 +680,24 @@ RemotePosition calculate_remote_position(float dist_left_cm, float dist_right_cm
     float dL = dist_left_cm;
     float dR = dist_right_cm;
 
-    // Triangle inequality check: remote must be reachable from both anchors
-    // |dL - dR| must be <= B (baseline)
+    // |dL - dR| must be <= B
     float diff = fabsf(dL - dR);
     if (diff > B) {
-        // Measurements are geometrically impossible, likely noise
+        // Measurements are not possible, likely noise
         result.valid = 0;
         return result;
     }
 
     // Calculate lateral offset from robot center
-    // x > 0: remote is to the RIGHT of center
-    // x < 0: remote is to the LEFT of center
+    // x > 0: remote is to the right of center
+    // x < 0: remote is to the left of center
     float x = (dL * dL - dR * dR) / (2.0f * B);
 
     // Calculate forward distance
     // Using left anchor as reference: dL² = (x + B/2)² + y²
     float y_squared = dL * dL - (x + B / 2.0f) * (x + B / 2.0f);
 
-    // Clamp negative values (can occur due to measurement noise)
+    // Clamp negative values
     if (y_squared < 0.0f) {
         y_squared = 0.0f;
     }
@@ -762,3 +718,20 @@ RemotePosition calculate_remote_position(float dist_left_cm, float dist_right_cm
     result.valid = 1;
     return result;
 }
+
+int snap_to_45(int angle)
+{
+    // normalize to 0–359
+    angle = angle % 360;
+    if (angle < 0) angle += 360;
+
+    int snapped = (int)(round(angle / 45.0) * 45);
+
+    // keep result in 0–359
+    snapped = snapped % 360;
+
+    return snapped;
+}
+
+
+

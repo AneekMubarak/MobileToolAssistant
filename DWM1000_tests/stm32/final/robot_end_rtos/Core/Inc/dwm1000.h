@@ -55,7 +55,7 @@ typedef struct {
     uint8_t valid;       // 1 = valid measurement, 0 = invalid
 } RemotePosition;
 
-#define UWB_BASELINE_CM 30.0f
+#define UWB_BASELINE_CM 22.0f
 #define RAD_TO_DEG 57.2957795f
 
 //UwbPoseResult calculate_user_pose(float dL, float dR, float baseline_cm);
@@ -82,6 +82,10 @@ bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
 
 
 bool robot_ranging_step(DWM_Module* module, int* distance_cm_out);
+
+
+int snap_to_45(int angle);
+
 
 
 #endif /* INC_DWM1000_H_ */

@@ -119,12 +119,27 @@ int dwm1_avg_dist = 0;
 int dwm2_avg_dist = 0;
 
 
-float user_x_cm = 0.0f;
-float user_y_cm = 0.0f;
-float user_range_cm = 0.0f;
-float user_angle_deg = 0.0f;
+int angle_45 =0;
 
-#define UWB_CALIB_TEST_COUNT 100
+// POSITION RELATED STUFF
+
+#define POSITION_AVG_COUNT 1
+
+int left_sum_10 = 0;
+int right_sum_10 = 0;
+
+int left_count_10 = 0;
+int right_count_10 = 0;
+
+int left_avg_10 = 0;
+int right_avg_10 = 0;
+
+int left_avg_ready = 0;
+int right_avg_ready = 0;
+
+
+
+#define UWB_CALIB_TEST_COUNT 1000
 
 //uint64_t distance_records[1000] = {0};
 uint64_t average_distance = 0;
@@ -159,7 +174,7 @@ DWM_Module dwm1 = {
     .cs_pin  = DWM1_CS_N_Pin,
     .reset_port = DWM1_RESET_N_GPIO_Port,
     .reset_pin  = DWM1_RESET_N_Pin,
-	.antenna_delay = 32842.4059,
+	.antenna_delay =32846.66866,// 32842.4059,
 // 0,//32893.55898,
 	.offset_cm = 0//30
 
@@ -182,7 +197,7 @@ DWM_Module dwm2 = {
     .cs_pin  = DWM2_CS_N_Pin,
     .reset_port = DWM2_RESET_N_GPIO_Port,
     .reset_pin  = DWM2_RESET_N_Pin,
-	.antenna_delay = 32823.2235,//32978.8141,
+	.antenna_delay = 32810.43523,//32823.2235,//32978.8141,
 	.offset_cm = 0
 //32819.661//15435
 //0//32819.661//0//15473
@@ -209,6 +224,10 @@ typedef enum {
 } AnchorActive;
 
 AnchorActive active_anchor = ANCHOR_LEFT;
+
+RemotePosition remote_pos = {
+		.valid = 0
+};
 
 /* USER CODE END 0 */
 
@@ -773,6 +792,8 @@ void StartDefaultTask(void *argument)
   int uwb_right_valid = 0;
 
 
+
+
   /* Infinite loop */
   for(;;)
   {
@@ -796,6 +817,20 @@ void StartDefaultTask(void *argument)
 			uwb_left_valid = 1;
 			active_anchor = ANCHOR_RIGHT;
 
+            // accumulate 10 valid LEFT readings
+            left_sum_10 += uwb_dist_cm_dwm1;
+            left_count_10++;
+
+            if (left_count_10 >= POSITION_AVG_COUNT)
+            {
+                left_avg_10 = left_sum_10 / POSITION_AVG_COUNT;
+                left_avg_ready = 1;
+
+                left_sum_10 = 0;
+                left_count_10 = 0;
+            }
+
+            // CAlibrTION AVG
 			if(dwm1_count < UWB_CALIB_TEST_COUNT){
 				dwm1_running_sum += uwb_dist_cm_dwm1;
 				dwm1_count++;
@@ -814,6 +849,21 @@ void StartDefaultTask(void *argument)
 			uwb_right_valid = 1;
 			active_anchor = ANCHOR_LEFT;
 
+			// accumulate 10 valid RIGHT readings
+			right_sum_10 += uwb_dist_cm_dwm2;
+			right_count_10++;
+
+			if (right_count_10 >= POSITION_AVG_COUNT) {
+			 right_avg_10 = right_sum_10 / POSITION_AVG_COUNT;
+			 right_avg_ready = 1;
+
+			 right_sum_10 = 0;
+			 right_count_10 = 0;
+			}
+
+
+			// CALUIB AVG
+
 			if(dwm2_count < UWB_CALIB_TEST_COUNT){
 				dwm2_running_sum += uwb_dist_cm_dwm2;
 				dwm2_count++;
@@ -827,6 +877,21 @@ void StartDefaultTask(void *argument)
 		}
 
 	}
+
+	if(left_avg_ready  && right_avg_ready){
+		remote_pos = calculate_remote_position(uwb_dist_cm_dwm1, uwb_dist_cm_dwm2);
+//		remote_pos = calculate_remote_position(55, 50);
+
+		left_avg_ready = 0;
+		right_avg_ready = 0;
+	}
+
+
+	angle_45 = snap_to_45((int)remote_pos.angle_deg);
+
+
+
+
 
 
 
