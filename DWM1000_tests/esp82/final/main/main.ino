@@ -86,6 +86,12 @@ void loop(){
     // Main Remote Function
 
     // run(&dwm1,&dw_event);
+
+    // uint8_t chan_ctrl_1[4] = {0};
+	// dwm_read_reg(&dwm1,0x1f, chan_ctrl_1, 4);
+
+    // printRegHex(chan_ctrl_1, 4, "Chan Ctrl ");
+
     run2(&dwm1,&dw_event);
 
     // Serial.println(test_counter);

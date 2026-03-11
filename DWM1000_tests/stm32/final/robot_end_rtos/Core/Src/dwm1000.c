@@ -20,29 +20,11 @@
 
 extern SPI_HandleTypeDef hspi1;
 
-//static robot_state_t robot_state = ROBOT_SEND_POLL;
 static uint8_t retries = 0;
 #define MAX_RETRIES 3
-
-//#define ANTENNA_DELAY 33008.6534  // NO SCRATCH
-//#define ANTENNA_DELAY 32889.296
-//#define ANTENNA_DELAY 32948.97481
-
-
-//#define ANTENNA_DELAY 32827.48625
-
-
-#define DW_SPI_TIMEOUT HAL_MAX_DELAY   // milliseconds
-  // NO SCRATCH
-
-
-// Reading for 7.94m with default config is 16,373cm  --> 33 000
-
-//#define ANTENNA_DELAY 32835.0   // calibrated at 0.4m
-
+#define DW_SPI_TIMEOUT HAL_MAX_DELAY
 
 static robot_state_t robot_state = RSTATE_SEND_POLL;
-
 
 void dwm_reset(DWM_Module *module) {
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
@@ -55,21 +37,6 @@ void dwm_reset(DWM_Module *module) {
     osDelay(10);
 }
 
-
-//void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len) {
-//    uint8_t tx[1 + len];
-//    uint8_t rx[1 + len];
-//
-//    tx[0] = reg_id & 0x3F;
-//
-//    memset(&tx[1], 0, len);
-//
-//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-//    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
-//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
-//
-//    memcpy(data, &rx[1], len);
-//}
 
 void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len)
 {
@@ -84,22 +51,6 @@ void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t le
 }
 
 
-
-
-
-////
-//void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
-//    uint8_t tx[1 + len];
-//    tx[0] = 0x80 | (reg_id & 0x3F);
-//
-//    memcpy(&tx[1], data, len);
-//
-//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-//    HAL_SPI_Transmit(&hspi1, tx, 1 + len, HAL_MAX_DELAY);
-//
-//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
-//}
-
 void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
     uint8_t header = 0x80 | (reg_id & 0x3F);
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
@@ -112,9 +63,7 @@ void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t le
     }
 
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
-
 }
-
 
 
 
@@ -147,41 +96,7 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
 }
 
 
-//void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
-//
-//	uint8_t header[3];
-//    uint8_t header_len = 1;
-//
-//    header[0] = reg_id & 0x3F;
-//
-//    if (subaddr != 0xFFFF) {
-//        header[0] |= 0x40;
-//
-//        header[1] = subaddr & 0x7F;
-//        header_len = 2;
-//
-//        if (subaddr > 0x7F) {
-//            header[1] |= 0x80;
-//            header[2] = subaddr >> 7;
-//            header_len = 3;
-//        }
-//    }
-//
-//    //combine header + dummy
-//    uint8_t tx[header_len + len];
-//    uint8_t rx[header_len + len];
-//
-//    memcpy(tx, header, header_len);
-//    memset(tx + header_len, 0, len);
-//
-//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
-//    HAL_SPI_TransmitReceive(&hspi1, tx, rx, header_len + len, HAL_MAX_DELAY);
-//    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
-//
-//    memcpy(data, rx + header_len, len);
-//}
 
-//
 void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
     uint8_t header[3];
@@ -227,8 +142,6 @@ void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8
 }
 
 
-//
-//
 void dwm_configure(DWM_Module* module){
 
 	//1. AGC Tune1 - 2 octets
@@ -319,192 +232,9 @@ void dwm_configure(DWM_Module* module){
 	  ec_ctrl_reg[0] = ec_ctrl_reg[0]|0x04;
 	  dwm_write_reg_sub(module, 0x24,0x00,ec_ctrl_reg,4);
 
-
-	  // NEW
-//	  // set RX PRF to 64Mhz
-//	  uint8_t chan_ctrl_reg[4];
-//	  chan_ctrl_reg[2] = chan_ctrl_reg[2]&0xF3;
-//	  chan_ctrl_reg[2] |= 0x08; // set to 0x04 for 16Mhz
-//	  dwm_write_reg(module,0x1f,chan_ctrl_reg,4)
-
-	  // Antenna Delay
-//	  uint16_t ant_delay = 16456;
 }
 
 
-//void dwm_configure(DWM_Module* module){
-//
-//	//1. AGC Tune1 - 2 octets
-//	uint8_t current_agc1_config[2] = {0};
-//	dwm_read_reg_sub(module,0x23,0x04,current_agc1_config,2);
-//
-//	current_agc1_config[0] = 0x70;
-//	current_agc1_config[1] = 0x88;
-//
-//	dwm_write_reg_sub(module, 0x23,0x04,current_agc1_config,2);
-//	// dwm_read_reg_sub(module, 0x23,0x04,current_agc1_config,2);
-//
-//
-//	//2.AGC Tune2 (4 oct)
-//	uint8_t new_agc2_config[4] = {0x07,0xa9,0x02,0x25};
-//	dwm_write_reg_sub(module, 0x23,0x0c,new_agc2_config,4);
-//
-//    // AGC Tune3
-//    uint8_t agc_tune3[2] = {0x55, 0x00};
-//    dwm_write_reg_sub(module, 0x23, 0x12, agc_tune3, 2);
-//
-//    // DRX_Tune 0b
-//    uint8_t drx_tune0b[2] = {0x06, 0x00}; // non-SFD, good performance apparently, must check
-//    dwm_write_reg_sub(module, 0x27, 0x02, drx_tune0b, 2);
-//
-//    // DRX_Tune 1a
-//    uint8_t drx_tune1a[2] = {0x87, 0x00}; //this is for 16Mhz
-//    dwm_write_reg_sub(module, 0x27, 0x04, drx_tune1a, 2);
-//
-//    // DRX_Tune 1b
-//    uint8_t drx_tune1b[2] = {0x20, 0x00}; //this is for 850 kbps
-//    dwm_write_reg_sub(module, 0x27, 0x06, drx_tune1b, 2);
-//
-//		//3. DRX_Tune_2 (4 oct)
-//    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
-//	dwm_write_reg_sub(module, 0x27,0x08,new_drx2_config,4);
-//
-//
-//	//4. NTM
-//	uint8_t lde_cfg_1[1] = {0};
-//	dwm_read_reg_sub(module, 0x2E,0x0806,lde_cfg_1,1);
-//	lde_cfg_1[0] = (lde_cfg_1[0] & ~0x1F) | (0x0D & 0x1F);
-//	dwm_write_reg_sub(module, 0x2E,0x0806,lde_cfg_1,1);
-//
-////	5.LDE Config 2
-//	uint8_t lde_cfg_2[2] = {0x07,0x16};
-//	dwm_write_reg_sub(module, 0x2E,0x1806,lde_cfg_2,2);
-//
-//	//6. Tx Power
-//	uint8_t tx_power_ctrl[4] ={0x48,0x28,0x08,0x0e};
-//	dwm_write_reg_sub(module, 0x1E,0x00,tx_power_ctrl,4);
-//
-//
-////	7. RF_TXCTRL (3 oct)
-////	 DATASHEET_UNCLEAR (refer pg 153)
-////	 The data sheet says set 24 bits,  last oct is reserved and set to 0x00 but when reading it has 0xde, might have to set to 0x00 of issues
-//	uint8_t rf_txctrl[3] = {0xe3,0x3f,0x1e};
-//	dwm_write_reg_sub(module, 0x28,0x0c,rf_txctrl,3);
-//
-////	8.TC_PGDELAY (1 oct)
-//	uint8_t tc_pgdelay[1] = {0xc0};
-//	dwm_write_reg_sub(module, 0x2A,0x0b,tc_pgdelay,1);
-//
-////	9.PLL_TUNE (1 oct)
-//	uint8_t fs_pll_tune[1] = {0xbe};
-//	dwm_write_reg_sub(module, 0x2b,0x0b,fs_pll_tune,1);
-//
-//    // TX_FCTRL config - we set PRF, bit rate, and length of preamble over here
-//    uint8_t tx_fctrl[5] = {0};
-//    dwm_read_reg(module, 0x08, tx_fctrl, 5);
-//
-//    tx_fctrl[1] = (tx_fctrl[1] & 0x9F) | (0x20); //setting bit rate here to 850 kbps, was 6.8 Mbps before
-//    tx_fctrl[2] = (tx_fctrl[2] & 0xC0) | (0x09); //setting PRF to 16 Mhz
-//
-//    // SET PSR to 10
-//    tx_fctrl[2] = (tx_fctrl[2] & 0xc3) | (0x08); // 1024 preamble length
-//
-//    dwm_write_reg(module, 0x08, tx_fctrl, 5);
-//
-//
-////	10. LDE_LOAD
-//	//NOTE: refer page 176 for ldeload instruction if waking up from sleep/deep sleep
-//
-//	//L1 - write to PMSC Control0 lower 16 bits
-//	uint8_t pmsc_ctrl_0_lower_2_oct[2] = {0x01,0x03};
-//	dwm_write_reg_sub(module, 0x36, 0x00, pmsc_ctrl_0_lower_2_oct, 2);
-//
-//	//L2 - set OTP control LDELOAD bit (write entire reg)
-//	uint8_t otp_control[2] = {0x00,0x80};
-//	dwm_write_reg_sub(module, 0x2d, 0x06, otp_control, 2);
-//
-//	//Wait 150us
-//	osDelay(5);
-//
-//	// L-3
-//	uint8_t pmsc_ctrl_0_lower_2_oct_L3[2] = {0x00,0x02};
-//	dwm_write_reg_sub(module, 0x36, 0x00, pmsc_ctrl_0_lower_2_oct_L3, 2);
-//
-//
-//	// 10.LDO TUNE
-//		//NOTE: can be skipped ig
-//
-//	// ADDDITIONAL - (not part of the recommended configs)
-//
-//	//To fix the CLKPLL_LL bit not locking issue in reg 0x0f, the PLLDT bit of 0x24 must be set
-//
-//	  uint8_t ec_ctrl_reg[4] = {0};
-//	  dwm_read_reg_sub(module, 0x24,0x00,ec_ctrl_reg,4);
-//	  ec_ctrl_reg[0] = ec_ctrl_reg[0]|0x04;
-//	  dwm_write_reg_sub(module, 0x24,0x00,ec_ctrl_reg,4);
-//
-//	  osDelay(10);
-//
-//}
-
-
-void dwm_basic_transmit(DWM_Module* module){
-	/*
-	 * 1. Write data in TX_BUFFER
-	 * 2. Set frame len + other details in TX_FCTRL
-	 * 3. Initialte using TXSTRT bit in SysCtrlReg (0x0D)
-	 *
-	 * NOTE: Cannot read from TxBuffer
-	 * WARNING: reafing TX_FCTRL also reads TX_BUFFER, so dont read it during actove tx
-	 *
-	 * TX_FCTRL
-	 * 		-TFLEN: frame len, payload length + 2 CRC bytes
-	 * 		-TFLE: extended mode - not needed
-	 * 		-TXBR: bit rate, default = 6.8Mbps
-	 * 		-TR: Transmit bit rate ( ig its not needed) its set to 1 by def DATASHEET_UNCLEAR
-	 * 		-TXPRF: Pulse repetion freq (default of 16Mhz is ok, must be grater than 4Mhz)
-	 * 		-TXPSR: preamble length
-	 *
-	 * 		-NOTE - Modify premable length (TXPSR = 0b10, PE = 0b00) for preamble length of 1024
-	 * 		-NOTE - Receiver must match this
-	 *
-	 */
-
-
-
-	// WRITE DATA TO TX BUFFER
-	uint8_t tx_data[6] ={0xAA,0xBB,0xCC,0xDD,0xEE,0xFF};
-//	uint8_t tx_data[4] ={0xCA,0xAC,0x09,0xEF};
-	//0xFFEEDDCCBBAA
-
-	dwm_write_reg(module, 0x09, tx_data, 6);
-
-	//SET FRAME LENGTH AND PREAMBLE LENGTH
-	uint8_t tx_frame_control[5] = {0};
-	dwm_read_reg(module, 0x08, tx_frame_control, 5);
-	// fr_len = 4 + 2 +2  =
-	// Set frame length
-	tx_frame_control[0] &= 0x80;
-	tx_frame_control[0] |= 8;
-	// Set TXPSR=10, PE=00
-	tx_frame_control[2] &= ~(0x3C);
-	tx_frame_control[2] |= (0b10 << 2);
-
-    // Set bitrate to 850kbps (Comment the blwow lines for default of 6.8Mbps)
-//    tx_frame_control[1] &= 0x9f; //clear
-//    tx_frame_control[1] |= 0x20; //set to 850kpbs
-
-
-	dwm_write_reg(module, 0x08, tx_frame_control, 5);
-
-
-	//TRASMIT
-	uint8_t sys_ctrl[4] = {0};
-	dwm_read_reg(module, 0x0D, sys_ctrl, 4);
-	sys_ctrl[0] |= (1 << 1);
-	dwm_write_reg(module, 0x0D, sys_ctrl, 4);
-
-}
 
 /*
     buffer: buffer for message , use expected size (only payload no CRC)
@@ -640,24 +370,6 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
 
-//    uint8_t sys_event_status_reg[5] = {0};
-//
-//    osDelay(3);
-//
-//    dwm_read_reg(module, 0x0f, sys_event_status_reg, 5);
-//
-//    if(!(sys_event_status_reg[0]&0x80)){
-//    	return 0;
-//    }
-//
-//    uint8_t clear[5] = {0};
-//    clear[0] = 0x80;  // TXFRS
-//    clear[1] = 0xF0;  // clear RXFCE, RXRFTO, RXPTO etc
-//    dwm_write_reg(module, 0x0F, clear, 5);
-//
-//    return 1; // success
-
-
     uint8_t sys_status[5];
     int timeout = 10000;
 
@@ -674,8 +386,6 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     uint8_t clear[5] = {0};
     clear[0] = 0x80;
     dwm_write_reg(module, 0x0F, clear, 5);
-
-
 
     return 1;
 }
@@ -728,9 +438,7 @@ bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 
 
 
-
-
-bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
+bool robot_ranging_step(DWM_Module* module, int* distance_cm_out)
 {
     static uint64_t t_tx_poll = 0;
     static uint64_t t_rx_resp = 0;
@@ -738,7 +446,10 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
 
     static uint64_t t_tx_poll_2 = 0;
     static uint64_t t_rx_resp_2 = 0;
-    static uint64_t t_reply_2 = 0;
+//    static uint64_t t_reply_2 = 0;
+
+    static uint64_t t_rtt_2_from_remote = 0;
+
 
 
     uint8_t rx_buff[6];
@@ -815,16 +526,12 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
             break;
         }
 
-
         //**** NEW : FOR DS TWR stuff ********
-
         case RSTATE_SEND_POLL_2:
         {
 
-
             // Try sending poll frame
             uint8_t poll_frame[6] = {MSG_TYPE_POLL_2, 0,0,0,0,0};
-
 
             if (!send_frame(module, poll_frame, 6)) {
                 // send failed; retry a few times
@@ -861,7 +568,7 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
             if (dwm_receive(module, rx_buff, 6)) {
 
                 // Check response contents
-                if (!process_response_2(rx_buff, 6, &t_reply_2)) {
+                if (!process_response_2(rx_buff, 6, &t_rtt_2_from_remote)) {
                     // Bad response format
                     robot_state = RSTATE_ERROR_RECOVERY;
                     return false;
@@ -870,10 +577,6 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
                 // Save RX time
                 t_rx_resp_2 = read_timestamp(module, 0x15);
 
-//                // Compute range
-//                robot_state = RSTATE_COMPUTE;
-
-                //compute
                 robot_state = RSTATE_COMPUTE;
             }else{
             	robot_state = RSTATE_ERROR_RECOVERY;
@@ -884,17 +587,29 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
 
         case RSTATE_COMPUTE:
         {
-            uint64_t t_rtt_1  = ts_diff(t_rx_resp,   t_tx_poll);
-            uint64_t t_rtt_2  = ts_diff(t_rx_resp_2, t_tx_poll_2);
+            uint64_t t_rtt_1  = ts_diff(t_rx_resp,   t_tx_poll); // correct
+//            uint64_t t_rtt_2  = ts_diff(t_rx_resp_2, t_tx_poll_2);
+            uint64_t t_rtt_2  = t_rtt_2_from_remote;
+
+            uint64_t t_reply_2 = t_tx_poll_2-t_rx_resp;
+
 
             // DS-TWR: t_prop = (rtt1*rtt2 - reply1*reply2) / (rtt1+rtt2+reply1+reply2)
+
+            // Robot End
             double rtt1   = (double)t_rtt_1;
-            double rtt2   = (double)t_rtt_2;
-            double reply1 = (double)t_reply_1;
             double reply2 = (double)t_reply_2;
 
-            double t_prop = (rtt1 * rtt2 - reply1 * reply2)
-                          / (rtt1 + rtt2 + reply1 + reply2);
+            //Remote End
+            double rtt2   = (double)t_rtt_2;
+            double reply1 = (double)t_reply_1;
+
+
+
+//            double reply2 = (double)t_reply_2;
+
+            double t_prop = (((rtt1 * rtt2) - (reply1 * reply2))
+                          / (rtt1 + rtt2 + reply1 + reply2));
 
 
             t_prop -= module->antenna_delay;
@@ -904,8 +619,8 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
             }
 
             double distance_m = t_prop * DWT_TIME_UNITS * 299792458.0;
-            *distance_cm_out = (uint64_t)(distance_m * 100.0);
-
+            *distance_cm_out = (distance_m * 100.0);
+            *distance_cm_out += module->offset_cm;
             robot_state = RSTATE_SEND_POLL;
             return true;
         }
@@ -928,6 +643,122 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
         }
     }
 
-    return false;  // no new valid distance yet
+    return false;
 }
 
+
+//UwbPoseResult calculate_user_pose(float dL, float dR, float baseline_cm){
+//
+//    UwbPoseResult result = {0};
+//    if (dL <= 0.0f || dR <= 0.0f || baseline_cm <= 0.0f) {
+//        result.valid = 0;
+//        return result;
+//    }
+//
+//    float B = baseline_cm;
+//
+//    // lateral offset from center
+//    float x = (dL*dL - dR*dR) / (2.0f * B);
+//
+//    // forward distance
+//    float inside = dL*dL - (x + B/2.0f)*(x + B/2.0f);
+//
+//    if (inside < 0.0f) {
+//        inside = 0.0f;   // clamp due to measurement noise
+//    }
+//
+//    float y = sqrtf(inside);
+//
+//    // center-to-user distance
+//    float range = sqrtf(x*x + y*y);
+//
+//    // angle relative to robot forward axis
+//    float angle_deg = atan2f(x, y) * RAD_TO_DEG;
+//
+//    result.x_cm = x;
+//    result.y_cm = y;
+//    result.range_cm = range;
+//    result.angle_deg = angle_deg;
+//    result.valid = 1;
+//
+//    return result;
+//}
+//
+
+
+/**
+ * Calculate remote position relative to robot center
+ *
+ * Coordinate system (top view):
+ *
+ *              ^ Y (forward)
+ *              |
+ *              |  * Remote (x, y)
+ *              |
+ *    L(dwm1)---+---R(dwm2)  → X (right)
+ *         (-B/2)  (+B/2)
+ *              |
+ *            Robot
+ *
+ * Angle convention:
+ *   0°   = directly right
+ *   90°  = straight ahead
+ *   180° = directly left
+ *
+ * @param dist_left_cm   Distance from LEFT anchor (dwm1) to remote
+ * @param dist_right_cm  Distance from RIGHT anchor (dwm2) to remote
+ * @return RemotePosition struct with distance, angle, and validity flag
+ */
+RemotePosition calculate_remote_position(float dist_left_cm, float dist_right_cm)
+{
+    RemotePosition result = {0};
+
+    // Validate inputs
+    if (dist_left_cm <= 0.0f || dist_right_cm <= 0.0f) {
+        result.valid = 0;
+        return result;
+    }
+
+    float B = UWB_BASELINE_CM;
+    float dL = dist_left_cm;
+    float dR = dist_right_cm;
+
+    // Triangle inequality check: remote must be reachable from both anchors
+    // |dL - dR| must be <= B (baseline)
+    float diff = fabsf(dL - dR);
+    if (diff > B) {
+        // Measurements are geometrically impossible, likely noise
+        result.valid = 0;
+        return result;
+    }
+
+    // Calculate lateral offset from robot center
+    // x > 0: remote is to the RIGHT of center
+    // x < 0: remote is to the LEFT of center
+    float x = (dL * dL - dR * dR) / (2.0f * B);
+
+    // Calculate forward distance
+    // Using left anchor as reference: dL² = (x + B/2)² + y²
+    float y_squared = dL * dL - (x + B / 2.0f) * (x + B / 2.0f);
+
+    // Clamp negative values (can occur due to measurement noise)
+    if (y_squared < 0.0f) {
+        y_squared = 0.0f;
+    }
+
+    float y = sqrtf(y_squared);
+
+    // Store x, y coordinates
+    result.x_cm = x;
+    result.y_cm = y;
+
+    // Distance from robot center to remote
+    result.distance_cm = sqrtf(x * x + y * y);
+
+    // Angle: atan2(y, x) gives angle from +X axis (right side)
+    // Result: 0° = right, 90° = forward, 180° = left
+    result.angle_deg = atan2f(y, x) * RAD_TO_DEG;
+
+    result.valid = 1;
+    return result;
+}

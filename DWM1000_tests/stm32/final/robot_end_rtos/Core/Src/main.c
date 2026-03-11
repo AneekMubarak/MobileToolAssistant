@@ -26,6 +26,8 @@
 #include "dwm1000.h"
 #include "VL53L1X_api.h"
 #include "VL53l1X_calibration.h"
+#include <math.h>
+
 
 /* USER CODE END Includes */
 
@@ -36,7 +38,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+//#define UWB_BASELINE_CM 30.0f
+//#define RAD_TO_DEG 57.2957795f
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -84,8 +87,8 @@ uint64_t poll_ts = 0;
 uint8_t rx_buffer[4] = {0};
 uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
 
-uint64_t uwb_dist_cm_dwm1 = 0;
-uint64_t uwb_dist_cm_dwm2 = 0;
+int uwb_dist_cm_dwm1 = 0;
+int uwb_dist_cm_dwm2 = 0;
 
 
 uint64_t t_prop = 0;
@@ -116,7 +119,12 @@ int dwm1_avg_dist = 0;
 int dwm2_avg_dist = 0;
 
 
-#define UWB_CALIB_TEST_COUNT 1000
+float user_x_cm = 0.0f;
+float user_y_cm = 0.0f;
+float user_range_cm = 0.0f;
+float user_angle_deg = 0.0f;
+
+#define UWB_CALIB_TEST_COUNT 100
 
 //uint64_t distance_records[1000] = {0};
 uint64_t average_distance = 0;
@@ -151,7 +159,21 @@ DWM_Module dwm1 = {
     .cs_pin  = DWM1_CS_N_Pin,
     .reset_port = DWM1_RESET_N_GPIO_Port,
     .reset_pin  = DWM1_RESET_N_Pin,
-	.antenna_delay = 0
+	.antenna_delay = 32842.4059,
+// 0,//32893.55898,
+	.offset_cm = 0//30
+
+	//32893.55898///15455-20
+//0//0//15433+23
+//32894
+
+			//32893.55898
+//32925.55898
+//0//32989.28859
+//32966.026//0//33119.48506
+//0//33213.2657
+//0//32804.04109
+
 };
 
 
@@ -160,7 +182,16 @@ DWM_Module dwm2 = {
     .cs_pin  = DWM2_CS_N_Pin,
     .reset_port = DWM2_RESET_N_GPIO_Port,
     .reset_pin  = DWM2_RESET_N_Pin,
-	.antenna_delay = 32889.296
+	.antenna_delay = 32823.2235,//32978.8141,
+	.offset_cm = 0
+//32819.661//15435
+//0//32819.661//0//15473
+//32979
+
+
+
+//32950.8141
+//0//0//32936.18654//32889.296
 };
 
 
@@ -195,7 +226,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+   HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -723,12 +754,6 @@ void StartDefaultTask(void *argument)
   /* init code for USB_HOST */
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
-//  uint8_t device_id[4] = {0};
-//  uint8_t sys_event_status_reg[5] = {0};
-
-  uint8_t clear_tx[5] = {0};
-  clear_tx[0] = 0xF0;  // only TX bits
-
 
 
   dwm_reset(&dwm2);
@@ -739,31 +764,24 @@ void StartDefaultTask(void *argument)
 
   // Stop SPI
   HAL_SPI_DeInit(&hspi1);
-
   // Change prescaler to fast
   hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
-
   // Re-init SPI
   HAL_SPI_Init(&hspi1);
 
   int uwb_left_valid = 0;
   int uwb_right_valid = 0;
 
-  // for calibration purposes
-
-//  int dwm1_count = 0;
-//  int dwm2_count = 0;
-//
-//  int dwm1_running_sum = 0;
-//  int dwm2_running_sum = 0;
-//
-//  int dwm1_avg_dist = 0;
-//  int dwm2_avg_dist = 0;
-
 
   /* Infinite loop */
   for(;;)
   {
+
+
+	uint8_t chan_ctrl_1[4] = {0};
+	dwm_read_reg(&dwm1,0x1f, chan_ctrl_1, 4);
+	uint8_t chan_ctrl_2[4] = {0};
+	dwm_read_reg(&dwm2,0x1f, chan_ctrl_2, 4);
 
 	bool finished = false;
 	test_counter++;
@@ -778,13 +796,15 @@ void StartDefaultTask(void *argument)
 			uwb_left_valid = 1;
 			active_anchor = ANCHOR_RIGHT;
 
-			if(++dwm1_count < UWB_CALIB_TEST_COUNT){
+			if(dwm1_count < UWB_CALIB_TEST_COUNT){
 				dwm1_running_sum += uwb_dist_cm_dwm1;
+				dwm1_count++;
 			}
 
 			if(dwm1_count == UWB_CALIB_TEST_COUNT){
 				dwm1_avg_dist = dwm1_running_sum/UWB_CALIB_TEST_COUNT;
 			}
+
 		}
 
 	}
@@ -794,35 +814,20 @@ void StartDefaultTask(void *argument)
 			uwb_right_valid = 1;
 			active_anchor = ANCHOR_LEFT;
 
-			if(++dwm2_count < UWB_CALIB_TEST_COUNT){
+			if(dwm2_count < UWB_CALIB_TEST_COUNT){
 				dwm2_running_sum += uwb_dist_cm_dwm2;
+				dwm2_count++;
+
 			}
 
 			if(dwm2_count == UWB_CALIB_TEST_COUNT){
 				dwm2_avg_dist = dwm2_running_sum/UWB_CALIB_TEST_COUNT;
 			}
 
-
 		}
 
 	}
 
-//		uwb_return = robot_ranging_step(&dwm1, &uwb_dist_cm_dwm2);
-//
-//		if(uwb_return){
-//
-//			if(count_uwb<100){
-//				uwb_dist_running_sum += uwb_dist_cm_dwm2;
-//	//			count_uwb++;
-//			}
-//
-//			if(count_uwb >= 100){
-//				average_distance = uwb_dist_running_sum/100;
-//			}
-//			count_uwb++;
-//
-//
-//		}
 
 
 
