@@ -1,0 +1,8 @@
+VCC 3.3v extern
+
+Sclk D5
+MOSI d7
+MISO d6
+CS d8
+Irq d1
+RST d0

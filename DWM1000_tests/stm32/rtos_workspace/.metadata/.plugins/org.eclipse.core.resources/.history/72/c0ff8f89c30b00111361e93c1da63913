@@ -1,0 +1,60 @@
+///*
+// * dwm1000.c
+// *
+// *  Created on: Feb 16, 2026
+// *      Author: Aneek Mubarak
+// */
+//
+//
+#include "dwm1000.h"
+#include "main.h"
+#include "stm32f4xx_hal.h"  // Make sure HAL headers are included
+
+extern SPI_HandleTypeDef hspi1;
+
+
+void DWM_Reset(DWM_Module *module) {
+    // Pull RESET low
+    HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
+    HAL_Delay(1);  // 1 ms minimum
+
+    // Release RESET (Hi-Z because open-drain)
+    HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_SET);
+    HAL_Delay(10); // Allow DW1000 to boot
+}
+
+
+void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
+    uint8_t tx[1 + len];
+    uint8_t rx[1 + len];
+
+    // First byte: register address, mask to 6 bits
+    tx[0] = reg_id & 0x3F;
+
+    // Zero-fill remaining bytes
+    memset(&tx[1], 0, len);
+
+    // Pull CS low
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
+    // SPI transaction
+    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
+    // Release CS
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+    // Copy received data (skip first byte, which was the register)
+    memcpy(data, &rx[1], len);
+}
+
+
+void DWM_WriteReg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
+    uint8_t tx[1 + len];
+    // First byte: register address + write bit (bit 7)
+    tx[0] = 0x80 | (reg_id & 0x3F);
+    // Copy data to transmit buffer
+    memcpy(&tx[1], data, len);
+    // Pull CS low
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
+    // SPI transmit
+    HAL_SPI_Transmit(&hspi1, tx, 1 + len, HAL_MAX_DELAY);
+    // Release CS
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+}

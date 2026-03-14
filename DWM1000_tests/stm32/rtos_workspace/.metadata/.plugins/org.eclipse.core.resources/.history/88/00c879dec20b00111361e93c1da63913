@@ -1,0 +1,65 @@
+///*
+// * dwm1000.c
+// *
+// *  Created on: Feb 16, 2026
+// *      Author: Aneek Mubarak
+// */
+//
+//
+//#include "dwm1000.h"
+//
+//// Global shared SPI handle
+//extern SPI_HandleTypeDef hspi1;
+//
+//// Optional: SPI mutex if multiple tasks may access SPI
+//extern SemaphoreHandle_t spiMutex;
+//
+//// Utility to select/de-select a DW1000
+//static inline void DWM1000_Select(DWM1000_Handle_t *dev) {
+//    HAL_GPIO_WritePin(dev->cs_port, dev->cs_pin, GPIO_PIN_RESET);
+//}
+//static inline void DWM1000_Deselect(DWM1000_Handle_t *dev) {
+//    HAL_GPIO_WritePin(dev->cs_port, dev->cs_pin, GPIO_PIN_SET);
+//}
+//
+//// Reset the device
+//void DWM1000_Init(DWM1000_Handle_t *dev) {
+//    // Hardware reset sequence
+//    HAL_GPIO_WritePin(dev->reset_port, dev->reset_pin, GPIO_PIN_RESET);
+//    osDelay(5);
+//    HAL_GPIO_WritePin(dev->reset_port, dev->reset_pin, GPIO_PIN_SET);
+//    osDelay(5);
+//}
+//
+//// Simple register read (direct)
+//HAL_StatusTypeDef DWM1000_ReadReg(DWM1000_Handle_t *dev,
+//                                  uint8_t reg_addr,
+//                                  uint8_t sub_addr,
+//                                  uint8_t *buffer,
+//                                  uint16_t len)
+//{
+//    HAL_StatusTypeDef status;
+//    uint8_t header[2];
+//    uint8_t header_len = 1;
+//
+//    // Build SPI header
+//    header[0] = reg_addr & 0x3F;  // bit 6=0, bit7=0 for read
+//    if (sub_addr != 0xFF) {       // using 0xFF as "no subaddr"
+//        header[0] |= 0x40;        // set subaddress bit
+//        header[1] = sub_addr;
+//        header_len = 2;
+//    }
+//
+//    // Acquire SPI mutex if shared
+//    if(spiMutex) xSemaphoreTake(spiMutex, portMAX_DELAY);
+//
+//    DWM1000_Select(dev);
+//    status = HAL_SPI_Transmit(&hspi1, header, header_len, 10);
+//    if(status != HAL_OK) goto done;
+//    status = HAL_SPI_Receive(&hspi1, buffer, len, 10);
+//
+//done:
+//    DWM1000_Deselect(dev);
+//    if(spiMutex) xSemaphoreGive(spiMutex);
+//    return status;
+//}

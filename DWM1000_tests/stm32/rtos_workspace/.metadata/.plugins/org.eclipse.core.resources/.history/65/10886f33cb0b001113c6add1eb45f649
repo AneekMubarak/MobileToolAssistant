@@ -1,0 +1,52 @@
+///*
+// * dwm1000.c
+// *
+// *  Created on: Feb 16, 2026
+// *      Author: Aneek Mubarak
+// */
+//
+//
+#include "dwm1000.h"
+#include "main.h"
+#include "stm32f4xx_hal.h"
+
+extern SPI_HandleTypeDef hspi1;
+
+
+void dwm_reset(DWM_Module *module) {
+    HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
+    HAL_Delay(1);  // 1 ms minimum
+
+    // Release  to Hi-Z because open-drain
+    HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_SET);
+    HAL_Delay(10); // Allow DW1000 to boot
+}
+
+
+void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
+    uint8_t tx[1 + len];
+    uint8_t rx[1 + len];
+
+    tx[0] = reg_id & 0x3F;
+
+    memset(&tx[1], 0, len);
+
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
+    HAL_SPI_TransmitReceive(&hspi1, tx, rx, 1 + len, HAL_MAX_DELAY);
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+
+    memcpy(data, &rx[1], len);
+}
+
+
+void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
+    uint8_t tx[1 + len];
+    tx[0] = 0x80 | (reg_id & 0x3F);
+
+    memcpy(&tx[1], data, len);
+
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi1, tx, 1 + len, HAL_MAX_DELAY);
+
+    HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_SET);
+}
