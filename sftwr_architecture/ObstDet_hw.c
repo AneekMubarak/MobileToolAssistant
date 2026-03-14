@@ -2,9 +2,9 @@
 
 #define OBSTACLE_THRESHOLD 1000 //1000mm == 1m
 
-static uint16_t filtered_left = 0;
-static uint16_t filtered_center = 0;
-static uint16_t filtered_right = 0;
+    static uint16_t filtered_left = 0;
+    static uint16_t filtered_center = 0;
+    static uint16_t filtered_right = 0;
 
 static uint16_t Filter(uint16_t previous, uint16_t current)
 {

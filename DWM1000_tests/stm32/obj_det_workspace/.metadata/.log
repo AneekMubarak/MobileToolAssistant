@@ -1,0 +1,18 @@
+!SESSION 2026-02-25 17:32:58.681 -----------------------------------------------
+eclipse.buildId=Version 1.19.0
+java.version=21.0.3
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_CA
+Command-line arguments:  -os win32 -ws win32 -arch x86_64
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 4 4 2026-02-25 17:33:47.181
+!MESSAGE CubeMX plugin appears to be active, Log4j initialization might be too late.
+
+!ENTRY com.st.stm32cube.ide.mcu.informationcenter 1 1 2026-02-25 17:33:47.183
+!MESSAGE Log4j2 initialized with config file C:\Users\dubem\Documents\Usask University files\CME 495\MobileToolAssistant\DWM1000_tests\stm32\obj_det_workspace\.metadata\.log4j2.xml
+
+!ENTRY com.st.stm32cube.ide.mcu.ide 1 1 2026-02-25 17:33:53.613
+!MESSAGE Started RMI Server, listening on port 41337
+
+!ENTRY org.eclipse.cdt.core 1 0 2026-02-25 17:34:44.419
+!MESSAGE Indexed 'robot_end_rtos' (49 sources, 168 headers) in 14.3 sec: 19,055 declarations; 101,716 references; 1 unresolved inclusions; 202 syntax errors; 241 unresolved names (0.2%)
