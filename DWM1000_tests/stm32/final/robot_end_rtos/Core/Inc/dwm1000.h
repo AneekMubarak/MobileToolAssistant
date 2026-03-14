@@ -38,6 +38,9 @@ typedef enum  {
 } robot_state_t;
 
 
+
+
+
 //typedef struct {
 //    float x_cm;          // lateral offset from robot center
 //    float y_cm;          // forward distance from robot center
@@ -55,7 +58,10 @@ typedef struct {
     uint8_t valid;       // 1 = valid measurement, 0 = invalid
 } RemotePosition;
 
-#define UWB_BASELINE_CM 22.0f
+
+
+
+#define UWB_BASELINE_CM 29.0f //28
 #define RAD_TO_DEG 57.2957795f
 
 //UwbPoseResult calculate_user_pose(float dL, float dR, float baseline_cm);
@@ -77,11 +83,11 @@ uint64_t ts_diff(uint64_t a, uint64_t b);
 bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len);
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len);
 
-bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
+bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out, bool* standby_flag);
 bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out);
 
 
-bool robot_ranging_step(DWM_Module* module, int* distance_cm_out);
+bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_flag);
 
 
 int snap_to_45(int angle);

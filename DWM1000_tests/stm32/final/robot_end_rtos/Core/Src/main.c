@@ -121,9 +121,13 @@ int dwm2_avg_dist = 0;
 
 int angle_45 =0;
 
+bool standby_state = false;
+
+
+
 // POSITION RELATED STUFF
 
-#define POSITION_AVG_COUNT 1
+#define POSITION_AVG_COUNT 5
 
 int left_sum_10 = 0;
 int right_sum_10 = 0;
@@ -139,7 +143,7 @@ int right_avg_ready = 0;
 
 
 
-#define UWB_CALIB_TEST_COUNT 1000
+#define UWB_CALIB_TEST_COUNT 100
 
 //uint64_t distance_records[1000] = {0};
 uint64_t average_distance = 0;
@@ -174,7 +178,7 @@ DWM_Module dwm1 = {
     .cs_pin  = DWM1_CS_N_Pin,
     .reset_port = DWM1_RESET_N_GPIO_Port,
     .reset_pin  = DWM1_RESET_N_Pin,
-	.antenna_delay =32846.66866,// 32842.4059,
+	.antenna_delay =32848.80003,//32846.66866,// 32842.4059,
 // 0,//32893.55898,
 	.offset_cm = 0//30
 
@@ -197,7 +201,7 @@ DWM_Module dwm2 = {
     .cs_pin  = DWM2_CS_N_Pin,
     .reset_port = DWM2_RESET_N_GPIO_Port,
     .reset_pin  = DWM2_RESET_N_Pin,
-	.antenna_delay = 32810.43523,//32823.2235,//32978.8141,
+	.antenna_delay = 32833.88039,//32810.43523,//32823.2235,//32978.8141,
 	.offset_cm = 0
 //32819.661//15435
 //0//32819.661//0//15473
@@ -811,7 +815,7 @@ void StartDefaultTask(void *argument)
 
 	if (active_anchor == ANCHOR_LEFT){
 
-		finished = robot_ranging_step(&dwm1,&uwb_dist_cm_dwm1);
+		finished = robot_ranging_step(&dwm1,&uwb_dist_cm_dwm1,&standby_state);
 
 		if(finished){
 			uwb_left_valid = 1;
@@ -844,7 +848,7 @@ void StartDefaultTask(void *argument)
 
 	}
 	else{
-		finished  = robot_ranging_step(&dwm2,&uwb_dist_cm_dwm2);
+		finished  = robot_ranging_step(&dwm2,&uwb_dist_cm_dwm2,&standby_state);
 		if(finished){
 			uwb_right_valid = 1;
 			active_anchor = ANCHOR_LEFT;

@@ -14,6 +14,7 @@
 #define MSG_TYPE_POLL_2 0xA2
 #define MSG_TYPE_RESPONSE 0xB2
 #define MSG_TYPE_FINAL 0xA3
+#define MSG_TYPE_STANDBY 0x69
 
 #define DWT_TIME_UNITS (1.0 / (499.2e6 * 128.0))
 #define US_TO_DWT(us) ((uint64_t)((us) / (DWT_TIME_UNITS * 1e6)))
@@ -391,14 +392,20 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 }
 
 
-bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
+bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out, bool* standby_flag)
 {
     if (len < 6)
         return false;
 
     //Check message type
-    if (rx_buffer[0] != MSG_TYPE_RESPONSE)
+    if(rx_buffer[0] == MSG_TYPE_STANDBY){
+    	*standby_flag = !(*standby_flag);
+    }
+
+    if (rx_buffer[0] != MSG_TYPE_RESPONSE && rx_buffer[0] != MSG_TYPE_STANDBY){
         return false;
+
+    }
 
     //Reconstruct 40-bit little-endian timestamp
     uint64_t treply = 0;
@@ -438,7 +445,7 @@ bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 
 
 
-bool robot_ranging_step(DWM_Module* module, int* distance_cm_out)
+bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_flag)
 {
     static uint64_t t_tx_poll = 0;
     static uint64_t t_rx_resp = 0;
@@ -487,7 +494,7 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out)
         case RSTATE_WAIT_RESPONSE_1:
         {
             if (dwm_receive(module, rx_buff, 6)) {
-            	if (!process_response(rx_buff, 6, &t_reply_1)) {
+            	if (!process_response(rx_buff, 6, &t_reply_1, standby_flag)) {
                     robot_state = RSTATE_ERROR_RECOVERY;
                     return false;
                 }
