@@ -27,6 +27,7 @@
 #include "VL53L1X_api.h"
 #include "VL53l1X_calibration.h"
 #include <math.h>
+#include "dwm_triangulation.h"
 
 
 /* USER CODE END Includes */
@@ -74,82 +75,6 @@ const osThreadAttr_t tofTask_attributes = {
 };
 
 
-int test_counter = 0;
-uint8_t device_id_dwm1[4] = {0};
-uint8_t device_id_dwm2[4] = {0};
-
-
-uint8_t device_id_low[2] = {0};
-int txfrs_error_count = 0;
-uint8_t sys_event_status_reg[5] = {0};
-uint64_t poll_ts = 0;
-
-uint8_t rx_buffer[4] = {0};
-uint8_t payload[4] = {0x1,0x2,0xCC,0xDD};
-
-int uwb_dist_cm_dwm1 = 0;
-int uwb_dist_cm_dwm2 = 0;
-
-
-uint64_t t_prop = 0;
-uint64_t t_reply = 0;
-
-bool uwb_return = false;
-
-// TOF Sensor
-uint16_t dev = 0x52;   // I2C address (try 0x29 if this fails)
-uint8_t sensorState = 0;
-uint8_t dataReady = 0;
-uint16_t distance = 0;
-uint8_t rangeStatus = 0;
-int status = 0;
-uint64_t dwm_distance = 0;
-
-int count_uwb = 0;
-uint64_t uwb_dist_running_sum = 0;
-
-
-int dwm1_count = 0;
-int dwm2_count = 0;
-
-int dwm1_running_sum = 0;
-int dwm2_running_sum = 0;
-
-int dwm1_avg_dist = 0;
-int dwm2_avg_dist = 0;
-
-
-int angle_45 =0;
-
-bool standby_state = false;
-
-
-
-// POSITION RELATED STUFF
-
-#define POSITION_AVG_COUNT 5
-
-int left_sum_10 = 0;
-int right_sum_10 = 0;
-
-int left_count_10 = 0;
-int right_count_10 = 0;
-
-int left_avg_10 = 0;
-int right_avg_10 = 0;
-
-int left_avg_ready = 0;
-int right_avg_ready = 0;
-
-
-
-#define UWB_CALIB_TEST_COUNT 100
-
-//uint64_t distance_records[1000] = {0};
-uint64_t average_distance = 0;
-//uint8_t device_id[4] = {0};
-int tof_counter = 0;
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -172,66 +97,17 @@ void TimeOfFlighMeausure(void *argument);
 
 
 
-// DWM_MODULE_STRUCTURES
-DWM_Module dwm1 = {
-    .cs_port = DWM1_CS_N_GPIO_Port,
-    .cs_pin  = DWM1_CS_N_Pin,
-    .reset_port = DWM1_RESET_N_GPIO_Port,
-    .reset_pin  = DWM1_RESET_N_Pin,
-	.antenna_delay =32848.80003,//32846.66866,// 32842.4059,
-// 0,//32893.55898,
-	.offset_cm = 0//30
-
-	//32893.55898///15455-20
-//0//0//15433+23
-//32894
-
-			//32893.55898
-//32925.55898
-//0//32989.28859
-//32966.026//0//33119.48506
-//0//33213.2657
-//0//32804.04109
-
-};
-
-
-DWM_Module dwm2 = {
-    .cs_port = DWM2_CS_N_GPIO_Port,
-    .cs_pin  = DWM2_CS_N_Pin,
-    .reset_port = DWM2_RESET_N_GPIO_Port,
-    .reset_pin  = DWM2_RESET_N_Pin,
-	.antenna_delay = 32833.88039,//32810.43523,//32823.2235,//32978.8141,
-	.offset_cm = 0
-//32819.661//15435
-//0//32819.661//0//15473
-//32979
-
-
-
-//32950.8141
-//0//0//32936.18654//32889.296
-};
-
-
-DWM_Module dwm3 = {
-    .cs_port = DWM3_CS_N_GPIO_Port,
-    .cs_pin  = DWM3_CS_N_Pin,
-    .reset_port = DWM3_RESET_N_GPIO_Port,
-    .reset_pin  = DWM3_RESET_N_Pin
-};
-
-
-typedef enum {
-    ANCHOR_LEFT,
-    ANCHOR_RIGHT
-} AnchorActive;
-
-AnchorActive active_anchor = ANCHOR_LEFT;
-
 RemotePosition remote_pos = {
 		.valid = 0
 };
+
+bool standby;
+
+
+// DELETE LATER
+
+int uwb_count = 0;
+int tof_count = 0 ;
 
 /* USER CODE END 0 */
 
@@ -756,7 +632,9 @@ void TimeOfFlighMeausure(void *argument) {
 //		// Clear interrupt
 //		VL53L1X_ClearInterrupt(dev);
 
-		tof_counter++;
+		tof_count++;
+
+
 
 	    osDelay(5);
 
@@ -778,22 +656,7 @@ void StartDefaultTask(void *argument)
   MX_USB_HOST_Init();
   /* USER CODE BEGIN 5 */
 
-
-  dwm_reset(&dwm2);
-  dwm_reset(&dwm1);
-
-  dwm_configure(&dwm1);
-  dwm_configure(&dwm2);
-
-  // Stop SPI
-  HAL_SPI_DeInit(&hspi1);
-  // Change prescaler to fast
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
-  // Re-init SPI
-  HAL_SPI_Init(&hspi1);
-
-  int uwb_left_valid = 0;
-  int uwb_right_valid = 0;
+  DWM_Triangulation_Init(&hspi1);
 
 
 
@@ -803,98 +666,16 @@ void StartDefaultTask(void *argument)
   {
 
 
-	uint8_t chan_ctrl_1[4] = {0};
-	dwm_read_reg(&dwm1,0x1f, chan_ctrl_1, 4);
-	uint8_t chan_ctrl_2[4] = {0};
-	dwm_read_reg(&dwm2,0x1f, chan_ctrl_2, 4);
+      DWM_Triangulation_TaskStep();
 
-	bool finished = false;
-	test_counter++;
-	dwm_read_reg(&dwm1, 0x00, device_id_dwm1, 4);
-	dwm_read_reg(&dwm2, 0x00, device_id_dwm2, 4);
+      if (DWM_Triangulation_GetPosition(&pos))
+      {
+          remote_pos = pos;
+      }
 
-	if (active_anchor == ANCHOR_LEFT){
+      standby = get_standby_state();
 
-		finished = robot_ranging_step(&dwm1,&uwb_dist_cm_dwm1,&standby_state);
-
-		if(finished){
-			uwb_left_valid = 1;
-			active_anchor = ANCHOR_RIGHT;
-
-            // accumulate 10 valid LEFT readings
-            left_sum_10 += uwb_dist_cm_dwm1;
-            left_count_10++;
-
-            if (left_count_10 >= POSITION_AVG_COUNT)
-            {
-                left_avg_10 = left_sum_10 / POSITION_AVG_COUNT;
-                left_avg_ready = 1;
-
-                left_sum_10 = 0;
-                left_count_10 = 0;
-            }
-
-            // CAlibrTION AVG
-			if(dwm1_count < UWB_CALIB_TEST_COUNT){
-				dwm1_running_sum += uwb_dist_cm_dwm1;
-				dwm1_count++;
-			}
-
-			if(dwm1_count == UWB_CALIB_TEST_COUNT){
-				dwm1_avg_dist = dwm1_running_sum/UWB_CALIB_TEST_COUNT;
-			}
-
-		}
-
-	}
-	else{
-		finished  = robot_ranging_step(&dwm2,&uwb_dist_cm_dwm2,&standby_state);
-		if(finished){
-			uwb_right_valid = 1;
-			active_anchor = ANCHOR_LEFT;
-
-			// accumulate 10 valid RIGHT readings
-			right_sum_10 += uwb_dist_cm_dwm2;
-			right_count_10++;
-
-			if (right_count_10 >= POSITION_AVG_COUNT) {
-			 right_avg_10 = right_sum_10 / POSITION_AVG_COUNT;
-			 right_avg_ready = 1;
-
-			 right_sum_10 = 0;
-			 right_count_10 = 0;
-			}
-
-
-			// CALUIB AVG
-
-			if(dwm2_count < UWB_CALIB_TEST_COUNT){
-				dwm2_running_sum += uwb_dist_cm_dwm2;
-				dwm2_count++;
-
-			}
-
-			if(dwm2_count == UWB_CALIB_TEST_COUNT){
-				dwm2_avg_dist = dwm2_running_sum/UWB_CALIB_TEST_COUNT;
-			}
-
-		}
-
-	}
-
-	if(left_avg_ready  && right_avg_ready){
-		remote_pos = calculate_remote_position(uwb_dist_cm_dwm1, uwb_dist_cm_dwm2);
-//		remote_pos = calculate_remote_position(55, 50);
-
-		left_avg_ready = 0;
-		right_avg_ready = 0;
-	}
-
-
-	angle_45 = snap_to_45((int)remote_pos.angle_deg);
-
-
-
+      uwb_count++;
 
 
 

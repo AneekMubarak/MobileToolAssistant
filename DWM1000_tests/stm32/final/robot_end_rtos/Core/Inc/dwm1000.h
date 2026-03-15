@@ -40,16 +40,6 @@ typedef enum  {
 
 
 
-
-//typedef struct {
-//    float x_cm;          // lateral offset from robot center
-//    float y_cm;          // forward distance from robot center
-//    float range_cm;      // distance from robot center
-//    float angle_deg;     // bearing angle from straight ahead
-//    uint8_t valid;
-//} UwbPoseResult;
-//
-
 typedef struct {
     float distance_cm;   // Distance from robot center to remote
     float angle_deg;     // 0° = right, 90° = forward, 180° = left
