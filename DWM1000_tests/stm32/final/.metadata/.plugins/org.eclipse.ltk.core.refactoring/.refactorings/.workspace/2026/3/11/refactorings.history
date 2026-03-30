@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete resource &apos;dwm_robot_final_no_rtos&apos;" deleteContents="false" description="Delete resource &apos;dwm_robot_final_no_rtos&apos;" element1="/dwm_robot_final_no_rtos" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1772988645083"/>
+</session>

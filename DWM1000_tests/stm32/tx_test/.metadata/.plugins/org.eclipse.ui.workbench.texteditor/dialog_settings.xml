@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<item key="hasShownOverlayPopupBefore" value="true"/>
+	<item key="replaceBarOpen" value="true"/>
+	<list key="searchhistory">
+		<item value="hspi"/>
+		<item value="osDelay"/>
+		<item value="osDelay(1)"/>
+		<item value="os_Delay"/>
+		<item value="rtos"/>
+	</list>
+	<list key="replacehistory">
+		<item value="HAL_Delay(1)"/>
+	</list>
+</section>

@@ -1,0 +1,4 @@
+../Core/Src/dwm_triangulation.c:44:6:DWM_Triangulation_Init	1
+../Core/Src/dwm_triangulation.c:93:6:DWM_Triangulation_TaskStep	8
+../Core/Src/dwm_triangulation.c:154:6:DWM_Triangulation_GetPosition	3
+../Core/Src/dwm_triangulation.c:167:6:get_standby_state	1

@@ -1,0 +1,10 @@
+11:56:10 **** Incremental Build of configuration Debug for project final_robot_uwb_noRTOS ****
+make -j8 all 
+arm-none-eabi-size  final_robot_uwb_noRTOS.elf 
+   text	   data	    bss	    dec	    hex	filename
+  35220	    140	   4060	  39420	   99fc	final_robot_uwb_noRTOS.elf
+Finished building: default.size.stdout
+ 
+
+11:56:11 Build Finished. 0 errors, 0 warnings. (took 293ms)
+

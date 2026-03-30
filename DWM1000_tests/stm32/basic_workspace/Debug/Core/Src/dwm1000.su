@@ -1,0 +1,14 @@
+../Core/Src/dwm1000.c:43:6:dwm_reset	16	static
+../Core/Src/dwm1000.c:71:6:dwm_read_reg	32	static
+../Core/Src/dwm1000.c:100:6:dwm_write_reg	32	static
+../Core/Src/dwm1000.c:118:6:dwm_write_reg_sub	32	static
+../Core/Src/dwm1000.c:182:6:dwm_read_reg_sub	48	static
+../Core/Src/dwm1000.c:229:6:dwm_configure	80	static
+../Core/Src/dwm1000.c:448:6:dwm_basic_transmit	40	static
+../Core/Src/dwm1000.c:510:6:dwm_receive	72	static
+../Core/Src/dwm1000.c:694:10:read_timestamp	64	static
+../Core/Src/dwm1000.c:707:10:ts_diff	48	static
+../Core/Src/dwm1000.c:716:5:send_frame	56	static
+../Core/Src/dwm1000.c:784:6:process_response	64	static
+../Core/Src/dwm1000.c:807:6:process_response_2	64	static
+../Core/Src/dwm1000.c:900:6:robot_ranging_step	168	static

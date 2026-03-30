@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<item key="hasShownOverlayPopupBefore" value="true"/>
+	<item key="replaceBarOpen" value="true"/>
+	<list key="searchhistory">
+		<item value="pos"/>
+		<item value="remote_pos"/>
+		<item value="tof_count"/>
+		<item value="uwb_count"/>
+		<item value="uwb_count\"/>
+		<item value="standby"/>
+		<item value="standby_state"/>
+		<item value="new_position_ready"/>
+		<item value="remote_tag"/>
+		<item value="hal"/>
+		<item value="MSG_TYPE_POLL_2"/>
+		<item value="t_rx_resp_2"/>
+		<item value="right_avg_ready"/>
+		<item value="t_reply_2"/>
+		<item value="uwb_left_valid"/>
+	</list>
+	<list key="replacehistory">
+		<item value="RSTATE_WAIT_RESPONSE_1"/>
+	</list>
+</section>
