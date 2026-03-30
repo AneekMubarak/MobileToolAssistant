@@ -668,10 +668,7 @@ void StartDefaultTask(void *argument)
 
       DWM_Triangulation_TaskStep();
 
-      if (DWM_Triangulation_GetPosition(&pos))
-      {
-          remote_pos = pos;
-      }
+      DWM_Triangulation_GetPosition(&remote_pos);
 
       standby = get_standby_state();
 

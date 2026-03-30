@@ -14,6 +14,7 @@
 
 #define SPI_SPEED_MAX 20000000
 
+// #define SPI_SPEED_MAX 10500000
 
 #define MSG_TYPE_POLL 0xA1
 #define MSG_TYPE_POLL_2 0xA2
@@ -28,8 +29,8 @@
 static uint8_t retries = 0;
 #define MAX_RETRIES 3
 
-#define ANTENNA_DELAY 33019.31029  // NO SCRATCH
-// #define ANTENNA_DELAY 0  // NO SCRATCH
+// #define ANTENNA_DELAY 33019.31029  // NO SCRATCH
+#define ANTENNA_DELAY 32827.48625   // NO SCRATCH
 
 
 // Reading for 7.94m with default config is 16,373cm  --> 33 000
@@ -215,7 +216,9 @@ void dwm_configure(DWM_Module* module){
 
 	//	//3. DRX_Tune_2 (4 oct)
 //	uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31};
-    uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+    // uint8_t new_drx2_config[4] = {0x9a,0x00,0x1a,0x35};
+    uint8_t new_drx2_config[4] = {0x2d,0x00,0x1a,0x31}; // PAC 8, 16Mhz
+
 //    0x31 3B 00 6B
     // for PAC 8 -> 64Mhz Prf
     // uint8_t new_drx2_config[4] = {0x6b,0x00,0x3b,0x31};
@@ -669,5 +672,20 @@ bool robot_ranging_step(DWM_Module* module, uint64_t* distance_cm_out)
     }
 
     return false;  // no new valid distance yet
+}
+
+void printRegHex(uint8_t* data, size_t len, const char* info = "") {
+    
+    if (info[0] != '\0') {
+        Serial.print(info);
+        Serial.print(": ");
+    }
+
+    // in the buffer --> lsbs of the register are in lower indexes 
+    for (int i = (int)len - 1; i >= 0; i--) {
+        if (data[i] < 0x10) Serial.print("0"); // pad single hex digits
+        Serial.print(data[i], HEX);
+    }
+    Serial.println();
 }
 

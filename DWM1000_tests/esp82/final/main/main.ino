@@ -6,9 +6,15 @@
 DWM_Module dwm1 = { D8, D4 }; // CS=D8, RESET=D4
 
 volatile bool dw_event = false;
+volatile bool button_event = false;
 
 void IRAM_ATTR dwm_isr() {
     dw_event = true;   
+}
+
+void IRAM_ATTR button_isr() {
+    button_event = true; 
+    Serial.println("Button pressed");
 }
 
 void setup() {
@@ -26,6 +32,9 @@ void setup() {
     
     pinMode(D1, INPUT); // IRQ
     attachInterrupt(digitalPinToInterrupt(D1), dwm_isr, RISING);
+
+    pinMode(D2, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(D2), button_isr, FALLING);
 
 
     // to allow time to load the serial monitor
@@ -92,11 +101,15 @@ void loop(){
 
     // printRegHex(chan_ctrl_1, 4, "Chan Ctrl ");
 
-    run2(&dwm1,&dw_event);
+    run2(&dwm1,&dw_event,&button_event);
 
     // Serial.println(test_counter);
 
+    // if(button_event){
+    //     Serial.println("Button Pressed................................................................................");
+    //     button_event = false;
 
+    // }
 
     // int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     // send_payload[0]++;

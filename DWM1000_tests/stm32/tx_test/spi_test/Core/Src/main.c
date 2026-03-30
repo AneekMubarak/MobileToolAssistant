@@ -57,7 +57,7 @@ static void MX_SPI1_Init(void);
 void MX_USB_HOST_Process(void);
 
 /* USER CODE BEGIN PFP */
-
+uint32_t dev_id = 0;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -608,6 +608,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 
     uint32_t sys_status = dwm_read_reg_32(SYS_STATUS);
+
+    dev_id = dwm_read_device_id;
 
 //    if(sys_status & 0x2000000){
 //			clk_pll_error_count++;

@@ -79,7 +79,7 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len);
 // uint64_t start_ranging(DWM_Module* module);
 
 void run(DWM_Module* module, volatile bool* isr_flag);
-void run2(DWM_Module* module, volatile bool* isr_flag);
+void run2(DWM_Module* module, volatile bool* isr_flag, volatile bool* button_flag);
 
 
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len);

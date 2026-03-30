@@ -33,7 +33,12 @@ void setup() {
     SPI.setBitOrder(MSBFIRST);
 
     dwm_reset(&dwm1);
-    
+    Serial.println("Before Config");
+    uint8_t device_id[4] = {0};
+    dwm_read_reg(&dwm1, 0x00,device_id , 4);
+    printRegHex(device_id,4,"device_id");
+
+
     delay(1000);
 
     dwm_configure(&dwm1);
@@ -81,21 +86,26 @@ void loop(){
     uwb_return = robot_ranging_step(&dwm1,&distance_cm);
 
     if(uwb_return){
-        Serial.println(distance_cm);
+        // Serial.println(tr_count);
+        // Serial.println(distance_cm);
+        Serial.printf("Count: %9d | Distance: %5llu cm\n", tr_count, (unsigned long long)distance_cm);
         acc += distance_cm;
         tr_count++;
 
     }
 
-    if(tr_count >= 100){
-        uint64_t avg = acc/100;
-        Serial.print("Average");
-        Serial.println(avg);
 
-        acc = 0;
-        tr_count = 0;
+    delay(10);
 
-    }
+    // if(tr_count >= 100){
+    //     uint64_t avg = acc/100;
+    //     Serial.print("Average");
+    //     Serial.println(avg);
+
+    //     acc = 0;
+    //     tr_count = 0;
+
+    // }
 
 }
 
