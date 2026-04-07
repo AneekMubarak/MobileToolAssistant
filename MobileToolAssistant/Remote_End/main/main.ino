@@ -1,7 +1,6 @@
 #include "dw1000.h"
 #include <ESP8266WiFi.h>
 
-#define RX_BUFFER_SIZE 2  // Only payload (no CRC)
 
 DWM_Module dwm1 = { D8, D4 }; // CS=D8, RESET=D4
 
@@ -60,63 +59,12 @@ void setup() {
     sys_event_mask_reg[1] = sys_event_mask_reg[1]|0x20; // MRXDFR Bit
     sys_event_mask_reg[0] = sys_event_mask_reg[0]|0x80; // MTXFRS Bit
     dwm_write_reg(&dwm1,0x0E,sys_event_mask_reg,4);
-
-
+    
 }
     
-int test_counter = 0;
-uint8_t device_id[4] = {0};
-uint8_t device_id_low[2] = {0};
-int txfrs_error_count = 0;
-uint8_t sys_cfg[4] = {0};
-
-uint8_t clear_tx[5] = {0};
-
-uint8_t rx_buffer[6] = {0};
-
-uint8_t send_payload[4] = {0x0A, 0x0B, 0x0F, 0x0F};
-uint8_t sys_status[5] = {0};
-
 void loop(){
 
-
-    // test_counter++;
-	// dwm_read_reg(&dwm1, 0x00, device_id, 4);
-    // printRegHex(device_id,4,"device_id");
-    // Main Remote Function
-
-    // run(&dwm1,&dw_event);
-    run2(&dwm1,&dw_event);
-
-    // Serial.println(test_counter);
-
-
-
-    // int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
-    // send_payload[0]++;
-    // if(send_frame(&dwm1,send_payload,4)){
-    //     Serial.println("Sent Frame");
-    // }else{
-    //     Serial.println("Frame not Sent");
-    // }
-
+    run(&dwm1,&dw_event);   
 
 }
 
-    // RX interrupt
-//     ↓
-    // Read RX timestamp
-//     ↓
-// Compute T_tx = T_rx + delay
-//     ↓
-// Zero lower 9 bits
-//     ↓
-// Prepare response payload (insert timestamps)
-//     ↓
-// Write TX buffer
-//     ↓
-// Write frame length (TX_FCTRL)
-//     ↓
-// Write DX_TIME (0x0A)
-//     ↓
-// Set TXDLYS + TXSTRT

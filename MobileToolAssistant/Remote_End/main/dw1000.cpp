@@ -3,9 +3,8 @@
 #include "HardwareSerial.h"
 #include "dw1000.h"
 #include <cstdint>
-#include "dwm_regs.h"
 
-#define SPI_SPEED_MAX 20000000
+#define SPI_SPEED_MAX 20000000  //20Mhz
 
 #define MSG_TYPE_POLL 0xA1
 #define MSG_TYPE_POLL_2 0xA2
@@ -38,20 +37,10 @@ static int retry_counter = 0;
 
 
 
-
-//old 20000000 
 static uint32_t dw_spi_speed = 3000000; // 3 MHz safe init
 
+//// Reset DWM1000 to high impedence state/pullup
 void dwm_reset(DWM_Module *module) {
-    // pinMode(module->reset_pin, OUTPUT_OPEN_DRAIN); // ensure open-drain
-
-    // // Pull low to reset
-    // digitalWrite(module->reset_pin, LOW);
-    // delay(1); // TRST_OK minimum
-
-    // // Release to high-impedance
-    // digitalWrite(module->reset_pin, HIGH); // now acts as Hi-Z because pin is open-drain
-    // delay(10); // allow DW1000 to boot
 
     pinMode(module->reset_pin, OUTPUT);
     digitalWrite(module->reset_pin, LOW);
@@ -63,11 +52,12 @@ void dwm_reset(DWM_Module *module) {
 
 }
 
-/*
-reg_id = register id 
-len = no of octets in register (bytes)
-*/
-
+// Read basic DWM1000 register of len number of bytes
+/**
+ * @param reg_id The 6-bit register ID.
+ * @param data Buffer to store the read bytes.
+ * @param len Number of bytes to read.
+ */
 void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len)
 {
     uint8_t header = reg_id & 0x3F;
@@ -86,7 +76,7 @@ void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t le
 }
 
 
-
+// Read from DWM1000 sub register of len number of bytes
 void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
 	uint8_t header[3];
@@ -123,7 +113,12 @@ void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8
     SPI.endTransaction();
 }
 
-
+// Write to basic DWM1000 register of len number of bytes
+/**
+ * @param reg_id The 6-bit register ID.
+ * @param data Buffer containing data to write.
+ * @param len Number of bytes to write.
+ */
 void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len) {
 
     uint8_t header = 0x80 | (reg_id & 0x3F);
@@ -141,6 +136,7 @@ void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t l
     SPI.endTransaction();
 }
 
+// Write  to DWM1000 sub register of len number of bytes
 void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
 	uint8_t header[3];
@@ -161,7 +157,6 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
             header_len = 3;
         }
     }
-
     //start SPI 
     SPI.beginTransaction(SPISettings(dw_spi_speed, MSBFIRST, SPI_MODE0));
     //pull cs low
@@ -180,17 +175,15 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
 }
 
 
-
+// print register values in serial monitor in hex
 void printRegHex(uint8_t* data, size_t len, const char* info = "") {
     
     if (info[0] != '\0') {
         Serial.print(info);
         Serial.print(": ");
     }
-
-    // in the buffer --> lsbs of the register are in lower indexes 
     for (int i = (int)len - 1; i >= 0; i--) {
-        if (data[i] < 0x10) Serial.print("0"); // pad single hex digits
+        if (data[i] < 0x10) Serial.print("0"); //pad single hex digits
         Serial.print(data[i], HEX);
     }
     Serial.println();
@@ -198,7 +191,7 @@ void printRegHex(uint8_t* data, size_t len, const char* info = "") {
 
 
 
-
+//Configures the DWM1000 with recommended values for AGC, DRX, and LDE.
 void dwm_configure(DWM_Module* module){
 
 	//1. AGC Tune1 - 2 octets
@@ -289,27 +282,12 @@ void dwm_configure(DWM_Module* module){
     //   delay(10);
 
 
-
-
-
-    // // Add TXFRS Interrupt
-    // uint8_t sys_event_mask_reg[4] = {0};
-    // dwm_read_reg(module,0x0E,sys_event_mask_reg, 4);
-    // sys_event_mask_reg[0] = sys_event_mask_reg[0]|0x80; // set TXFRS bit high
-
-
-      // NEW
-	  // set RX PRF to 64Mhz
-	//   uint8_t chan_ctrl_reg[4];
-	//   chan_ctrl_reg[2] = chan_ctrl_reg[2]&0xF3;
-	//   chan_ctrl_reg[2] |= 0x08; // set to 0x04 for 16Mhz
-	//   dwm_write_reg(module,0x1f,chan_ctrl_reg,4);
-
 }
 
 
 void dwm_basic_transmit(DWM_Module* module){
 	/*
+    /* Notes
 	 * 1. Write data in TX_BUFFER
 	 * 2. Set frame len + other details in TX_FCTRL
 	 * 3. Initialte using TXSTRT bit in SysCtrlReg (0x0D)
@@ -328,8 +306,6 @@ void dwm_basic_transmit(DWM_Module* module){
 	 * 		-NOTE - Receiver must match this
 	 *
 	 */
-
-
 
 	// WRITE DATA TO TX BUFFER
 	uint8_t tx_data[4] ={0xAA,0xBB,0xCC,0xDD};
@@ -350,10 +326,7 @@ void dwm_basic_transmit(DWM_Module* module){
     // tx_frame_control[1] &= 0x9f; //clear
     // tx_frame_control[1] |= 0x20; //set to 850kpbs
 
-
-
 	dwm_write_reg(module, 0x08, tx_frame_control, 5);
-
 
 	//TRASMIT
 	uint8_t sys_ctrl[4] = {0};
@@ -428,7 +401,6 @@ SYS_CFG  bit RXM110K must be 1 if using 110 kbps else leave 0
 
 */
 
-
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 {
     // write to TX buffer
@@ -454,9 +426,6 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     sys_ctrl[0] |= (1 << 1); // TXSTRT
     dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
-
-
-
     uint8_t sys_event_status_reg[5] = {0};
     // delay(1);    
     delayMicroseconds(500); // this is not an issue bcs this happens after sending a frame, t_remote will be unaffected
@@ -468,11 +437,6 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 
     return 1;
 }
-
-
-//______________________________________
-// SINGLE SIDED TWO WAY RANGING 
-// ______________________________________
 
 
 // use 0x17 for TX_time and 0x15 for Rx_time
@@ -490,9 +454,7 @@ uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
 }
 
 
-
-
-
+// Calculate time difference between 2 timestamops
 uint64_t ts_diff(uint64_t a, uint64_t b)
 {
     //handle wraparound
@@ -501,6 +463,8 @@ uint64_t ts_diff(uint64_t a, uint64_t b)
 }
 
 
+
+// Reset remote state machine and timestamps
 void remote_reset_session(DWM_Module* module)
 {
     retry_counter = 0;
@@ -524,6 +488,7 @@ void remote_reset_session(DWM_Module* module)
     remote_state = REMOTE_WAIT_M1;
 }
 
+
 bool process_response(uint8_t *rx_buffer, uint16_t len, uint8_t msg_type)
 {
     if (len < 6)
@@ -536,181 +501,11 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint8_t msg_type)
     return true;
 }
 
+
+
+// State Machine for remote implementing double sided two way ranging.
+// param: isr_flag = to indicate button press for standby
 void run(DWM_Module* module, volatile bool* isr_flag)
-{
-    uint8_t sys_status[5] = {0};
-    uint8_t frame_info[4] = {0};
-
-    switch(remote_state)
-    {
-    //wait for message
-    case REMOTE_WAIT_M1:
-    {
-        // //enable receiver
-        // uint8_t sys_ctrl[4] = {0};
-        // dwm_read_reg(module, 0x0D, sys_ctrl, 4);
-        // sys_ctrl[1] |= (1 << 0);   // RXENAB
-        // dwm_write_reg(module, 0x0D, sys_ctrl, 4);
-
-        // Wait for interrupt flag
-        if(*isr_flag)
-        {
-            *isr_flag = false;
-
-            // Read SYS_STATUS
-            dwm_read_reg(module, 0x0F, sys_status, 5);
-            // Serial.println("Received Message");
-
-            // clear everythig
-            dwm_write_reg(module, 0x0F, sys_status, 5);
-
-            bool rxdfr = sys_status[1] & 0x20;
-            bool rxfcg = sys_status[1] & 0x40;  //RXFCG
-            bool rxfce = sys_status[1] & 0x80;  //RXFCE
-            bool ldedone = sys_status[1] & 0x04; //LDEDONE(check correct byte per config)
-
-            // Check RXDFR bit
-            if(rxdfr && rxfcg && ldedone)
-            {
-                // Read frame length
-                // dwm_read_reg(module, 0x10, frame_info, 4);
-                // uint16_t tflen = frame_info[0] & 0x7F;
-
-                // Read payload (exclude CRC)
-                // if(tflen >= 2)
-                //     dwm_read_reg(module, 0x11, rx_buffer, tflen - 2);
-
-                // Clear RXDFR flag
-                uint8_t clear[5] = {0};
-                clear[1] = 0x20;
-                dwm_write_reg(module, 0x0F, clear, 5);
-;
-
-                // save timestamp
-                t_rx_m1 = read_timestamp(module,0x15);
-                // Serial.print("Timestamp Rx: ");
-                // if(t_rx_m1 < last_timestamp){
-                //     Serial.println("----------New----------");               
-
-                // }
-                // Serial.println(t_rx_m1);               
-                // last_timestamp = t_rx_m1;
-
-                remote_state = REMOTE_SEND_M2;
-            }else {
-                // Serial.println("MESSAGE CORRUPTED");
-            }
-        }else{
-            // Serial.print("MESSAGE NOT RECEIVED");
-        }
-
-        break;
-    }
-    //sned message
-    case REMOTE_SEND_M2:
-    {
-    //Compute delayed TX time
-        // uint64_t reply_delay = 256000000ULL;  // ~1ms
-        uint64_t reply_delay = US_TO_DWT(500);  // 500 µs
-        t_tx_m2 = (t_rx_m1 + reply_delay) & (((uint64_t)1 << 40) - 1);
-
-        //Zero lower 9 bits
-        t_tx_m2 &= ~0x1FFULL;
-
-        //Write DX_TIME (0x0A)
-        uint8_t dx_time[5];
-        for (int i = 0; i < 5; i++)
-            dx_time[i] = (t_tx_m2 >> (8*i)) & 0xFF;
-
-        dwm_write_reg_sub(module, 0x0A, 0x00, dx_time, 5);
-
-        //Prepare payload
-        uint64_t treply = ts_diff(t_tx_m2, t_rx_m1);
-
-        uint8_t response_payload[9];
-        response_payload[0] = MSG_TYPE_RESPONSE;
-
-        for (int i = 0; i < 5; i++)
-            response_payload[1+i] = (treply >> (8*i)) & 0xFF;
-
-        // Write TX buffer
-        dwm_write_reg(module, 0x09, response_payload, 6);
-
-        //Set frame length
-        uint8_t tx_frame_control[5] = {0};
-        dwm_read_reg(module, 0x08, tx_frame_control, 5);
-        tx_frame_control[0] &= 0x80;
-        tx_frame_control[0] |= (6 + 2);
-
-        // // NEW
-        // // Set PRF to 64Mhz (comment out for 16Mhz)
-        // tx_frame_control[1] &= 0b11001111;
-        // tx_frame_control[1] |= 0b00100000;
-
-        dwm_write_reg(module, 0x08, tx_frame_control, 5);
-
-        //Trigger delayed TX
-        uint8_t sys_ctrl[4] = {0};
-        sys_ctrl[0] |= (1 << 2); // TXDLYS
-        sys_ctrl[0] |= (1 << 1); // TXSTRT
-        dwm_write_reg(module, 0x0D, sys_ctrl, 4);
-
-        remote_state = REMOTE_WAIT_TX_DONE;
-        break;
-    }
-
-    case REMOTE_WAIT_TX_DONE:
-    {
-        if (*isr_flag)
-        {
-            
-            *isr_flag = false;
-            Serial.println("Response Transmitted");
-            // Serial.print("Calculated Time: ");
-            // Serial.println(t_tx_m2);
-
-            // uint64_t tx_timestamp = read_timestamp(module,0x17);
-            // Serial.print("Actual Time: ");
-            // Serial.println(tx_timestamp);
-            // Serial.print("Difference: ");
-            // Serial.println(ts_diff(tx_timestamp,t_tx_m2));
-
-            Serial.print("T_reply: ");
-            Serial.println(ts_diff(t_tx_m2, t_rx_m1));
-
-
-
-            uint8_t sys_status[5] = {0};
-            dwm_read_reg(module, 0x0F, sys_status, 5);
-
-            bool txfrs = sys_status[0] & 0x80;  // TXFRS bit
-
-            if (txfrs)
-            {
-                // Serial.println("Response Transmitted Successfully");
-                // Clear TXFRS
-                uint8_t clear[5] = {0};
-                clear[0] = 0x80;
-                dwm_write_reg(module, 0x0F, clear, 5);
-
-                // Re-enable RX
-                uint8_t sys_ctrl[4] = {0};
-                sys_ctrl[1] |= (1 << 0);  // RXENAB
-                dwm_write_reg(module, 0x0D, sys_ctrl, 4);
-
-                remote_state = REMOTE_WAIT_M1;
-            }
-        }
-        break;
-    }
-
-    }
-}
-
-
-
-
-void run2(DWM_Module* module, volatile bool* isr_flag)
 {
     uint8_t sys_status[5] = {0};
     uint8_t frame_info[4] = {0};
@@ -760,7 +555,7 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
             }
             else
             {
-                // optional retry timeout handling
+                // optional retry for timeout handling
                 if(++retry_counter > MAX_RETRIES)
                 {
                     remote_reset_session(module);
@@ -808,12 +603,6 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
             sys_ctrl[0] |= (1 << 1); // TXSTRT
             dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
-            // if(!send_frame(module, response_payload, 6))
-            // {
-            //     remote_reset_session(module);
-            //     Serial.println("TX Error: Returning to REMOTE_WAIT_M1");
-            //     break;
-            // }
 
             remote_state = REMOTE_WAIT_TX_DONE;
             retry_counter = 0;
@@ -862,7 +651,8 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
             }
             break;
         }
-/// NEW ADDITION FOR DS TWR *******
+
+/// NEW ADDITION FOR DS-TWR from single sided
         case REMOTE_WAIT_M3:
         {
             if(*isr_flag)
@@ -888,14 +678,14 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
                     }
                     
 
-                    // save timestamp
+                    //save timestamp
                     t_rx_m3 = read_timestamp(module, 0x15);
-                    retry_counter = 0; // reset retries
+                    retry_counter = 0; //reset retries
                     remote_state = REMOTE_SEND_M4;
                 }
                 else
                 {
-                    // RX corrupted - reset session
+                    //RX corrupted-reset session
                     remote_reset_session(module);
                     Serial.println("STATE: REMOTE WAIT M3 -> RX Error: Returning to REMOTE_WAIT_M1");
 
@@ -956,8 +746,8 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
 
             //Trigger delayed TX
             uint8_t sys_ctrl[4] = {0};
-            sys_ctrl[0] |= (1 << 2); // TXDLYS
-            sys_ctrl[0] |= (1 << 1); // TXSTRT
+            sys_ctrl[0] |= (1 << 2); //TXDLYS
+            sys_ctrl[0] |= (1 << 1); //TXSTRT
             dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
 
@@ -973,13 +763,13 @@ void run2(DWM_Module* module, volatile bool* isr_flag)
                 *isr_flag = false;
                 dwm_read_reg(module, 0x0F, sys_status, 5);
 
-                bool txfrs = sys_status[0] & 0x80; // TXFRS bit
+                bool txfrs = sys_status[0] & 0x80; //TXFRS bit
                 if(txfrs)
                 {
                     uint8_t clear[5] = {0}; 
                     dwm_read_reg(module,0x0F,clear,5);
                     // clear[0] = 0x80;
-                    dwm_write_reg(module, 0x0F, clear, 5); // clear All
+                    dwm_write_reg(module, 0x0F, clear, 5); //clear All
 
                     // re-enable RX
                     uint8_t sys_ctrl[4] = {0};

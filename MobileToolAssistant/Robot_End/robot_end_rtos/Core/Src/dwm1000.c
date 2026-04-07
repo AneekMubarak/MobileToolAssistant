@@ -16,7 +16,10 @@
 #define MSG_TYPE_FINAL 0xA3
 #define MSG_TYPE_STANDBY 0x69
 
+// DWM1000 Time unit
 #define DWT_TIME_UNITS (1.0 / (499.2e6 * 128.0))
+
+// Convert microseconds to DWM1000 DTU
 #define US_TO_DWT(us) ((uint64_t)((us) / (DWT_TIME_UNITS * 1e6)))
 
 extern SPI_HandleTypeDef hspi1;
@@ -27,6 +30,7 @@ static uint8_t retries = 0;
 
 static robot_state_t robot_state = RSTATE_SEND_POLL;
 
+// Reset DWM1000 to high impedence state (configured in IOC file)
 void dwm_reset(DWM_Module *module) {
     HAL_GPIO_WritePin(module->reset_port, module->reset_pin, GPIO_PIN_RESET);
 //    HAL_Delay(1);  // 1 ms minimum
@@ -38,7 +42,12 @@ void dwm_reset(DWM_Module *module) {
     osDelay(10);
 }
 
-
+// Read basic DWM1000 register of len number of bytes
+/**
+ * @param reg_id The 6-bit register ID.
+ * @param data Buffer to store the read bytes.
+ * @param len Number of bytes to read.
+ */
 void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t len)
 {
     uint8_t header = reg_id & 0x3F;
@@ -52,6 +61,12 @@ void dwm_read_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint16_t le
 }
 
 
+// Write to basic DWM1000 register of len number of bytes
+/**
+ * @param reg_id The 6-bit register ID.
+ * @param data Buffer containing data to write.
+ * @param len Number of bytes to write.
+ */
 void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t len) {
     uint8_t header = 0x80 | (reg_id & 0x3F);
     HAL_GPIO_WritePin(module->cs_port, module->cs_pin, GPIO_PIN_RESET);
@@ -67,7 +82,7 @@ void dwm_write_reg(DWM_Module *module, uint8_t reg_id, uint8_t *data, uint8_t le
 }
 
 
-
+// Write  to DWM1000 sub register of len number of bytes
 void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
 	uint8_t header[3];
@@ -97,13 +112,13 @@ void dwm_write_reg_sub(DWM_Module *module, uint8_t reg_id, uint16_t subaddr, uin
 }
 
 
-
+// Read from DWM1000 sub register of len number of bytes
 void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8_t *data, uint16_t len) {
 
     uint8_t header[3];
     uint8_t header_len = 1;
 
-    // First header byte (READ)
+    // First header byte
     header[0] = reg_id & 0x3F;
 
     if (subaddr != 0xFFFF)
@@ -143,6 +158,7 @@ void dwm_read_reg_sub(DWM_Module *module,uint8_t reg_id, uint16_t subaddr, uint8
 }
 
 
+//Configures the DWM1000 with recommended values for AGC, DRX, and LDE.
 void dwm_configure(DWM_Module* module){
 
 	//1. AGC Tune1 - 2 octets
@@ -238,7 +254,7 @@ void dwm_configure(DWM_Module* module){
 
 
 /*
-    buffer: buffer for message , use expected size (only payload no CRC)
+    buffer: buffer for message - only payload size (no CRC)
     len: len of buffer array (octs)
 */
 bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
@@ -254,10 +270,7 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
     int rxcfg = 0;
     int lde_done = 0;
 
-
-
-
-    // ENABLE Rx
+// ENABLE Rx
 //    dwm_read_reg(module, 0x0D, sys_ctrl_reg, 4);
 //    sys_ctrl_reg[1] |= (1 << 0); // RXENAB
 //
@@ -273,8 +286,6 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
         rxcfg = sys_event_status_reg[1]&0x40;
         lde_done = sys_event_status_reg[1]&0x04;
 
-
-
         if(rxdfr && rxcfg && lde_done){ // RXDFR is high
             dwm_read_reg(module, 0x10,rx_frame_info_reg,4);
             tflen = rx_frame_info_reg[0]&0x7f; //tflen
@@ -282,8 +293,6 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
             if(tflen != 8){
             	return false;
             }
-
-
 
             dwm_read_reg(module, 0x11,buffer,tflen-2); // no need CRC bits --> write data to buffer
             // PROBLEM: can corrupt mem if buff too small
@@ -297,8 +306,6 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
 
             return true;
         }
-
-//        HAL_Delay(1);
         osDelay(1);
 
     }
@@ -317,10 +324,7 @@ bool dwm_receive(DWM_Module* module, uint8_t* buffer, uint16_t len){
 }
 
 
-
-//------------------
-// Two Way Ranging
-//-------------------
+// Read the Transmit/rcv timestamp from DWM1000
 // use 0x17 for TX_time and 0x15 for Rx_time
 uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
 {
@@ -335,6 +339,8 @@ uint64_t read_timestamp(DWM_Module* module,uint8_t reg)
     return value;
 }
 
+
+// Calculate time difference between 2 timestamops
 uint64_t ts_diff(uint64_t a, uint64_t b)
 {
     //handle wraparound
@@ -343,7 +349,7 @@ uint64_t ts_diff(uint64_t a, uint64_t b)
 }
 
 
-
+// Send a custom payload of len bytes
 int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 {
     // write to TX buffer
@@ -356,8 +362,7 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
     tx_frame_control[0] &= 0x80;
     tx_frame_control[0] |= (len + 2); // include CRC
 
-//    // NEW
-//    // Set PRF to 64Mhz (comment out for 16Mhz)
+//    // Set PRF to 64Mhz -- comment out for 16Mhz
 //    tx_frame_control[1] &= 0b11001111;
 //    tx_frame_control[1] |= 0b00100000;
 
@@ -392,6 +397,8 @@ int send_frame(DWM_Module* module, uint8_t* payload, uint8_t len)
 }
 
 
+// Process the rx buffer to check for MSG_TYPE_STANDBY and MSG_TYPE_RESPONSE
+// Extract timestamp from data frame to treply_out
 bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out, bool* standby_flag)
 {
     if (len < 6)
@@ -407,7 +414,7 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out, bo
 
     }
 
-    //Reconstruct 40-bit little-endian timestamp
+    //Reconstruct 40-bit little endian timestamp
     uint64_t treply = 0;
 
     for (int i = 0; i < 5; i++)
@@ -421,6 +428,7 @@ bool process_response(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out, bo
 }
 
 
+// Process Rx buffer for MSG_TYPE_FINAL and extract timestampt to trply_out
 bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 {
     if (len < 6)
@@ -444,7 +452,9 @@ bool process_response_2(uint8_t *rx_buffer, uint16_t len, uint64_t *treply_out)
 }
 
 
-
+// Sate machine for DOuble Sided Two Way Ranging
+// Writes to distance_cm_out => distance in cm to the remote from selected module
+// Updates standby_flag based on remote messages
 bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_flag)
 {
     static uint64_t t_tx_poll = 0;
@@ -457,13 +467,10 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
 
     static uint64_t t_rtt_2_from_remote = 0;
 
-
-
     uint8_t rx_buff[6];
 
     switch(robot_state)
     {
-        //*******************************************
         case RSTATE_SEND_POLL:
         {
             // Try sending poll frame
@@ -475,7 +482,7 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
                 return false;
             }
 
-            // Save TX timestamp immediately
+            //save TX timestamp immediately
             t_tx_poll = read_timestamp(module, 0x17);
 
             // enable receiver
@@ -483,7 +490,7 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
             sys_ctrl_reg[1] |= (1 << 0); // RXENAB
             dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
 
-            // Go to receiving state
+            //go to receiving state
             robot_state = RSTATE_WAIT_RESPONSE_1;
 
 
@@ -500,11 +507,11 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
                 }
                 t_rx_resp = read_timestamp(module, 0x15);
 
-                // ===== SEND POLL_2 IMMEDIATELY — DO NOT RETURN =====
+                //send poll2 immediately 
 
-                // Force IDLE first (critical after RX)
+                // Force IDLE state first
                 uint8_t trxoff[4] = {0};
-                trxoff[0] = (1 << 6);  // TRXOFF
+                trxoff[0] = (1 << 6);  //TRXOFF
                 dwm_write_reg(module, 0x0D, trxoff, 4);
 
                 // Clear all status
@@ -533,7 +540,6 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
             break;
         }
 
-        //**** NEW : FOR DS TWR stuff ********
         case RSTATE_SEND_POLL_2:
         {
 
@@ -541,7 +547,7 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
             uint8_t poll_frame[6] = {MSG_TYPE_POLL_2, 0,0,0,0,0};
 
             if (!send_frame(module, poll_frame, 6)) {
-                // send failed; retry a few times
+                // if send failed; retry a few times
                 robot_state = RSTATE_ERROR_RECOVERY;
                 return false;
             }
@@ -551,37 +557,34 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
 
 
             // enable receiver to get the final response
-
             uint8_t clear[5] = {0};
             clear[0] = 0x80;
             dwm_write_reg(module, 0x0F, clear, 5);
 
             uint8_t sys_ctrl_reg[4] = {0};
-            sys_ctrl_reg[1] |= (1 << 0); // RXENAB
+            sys_ctrl_reg[1] |= (1 << 0); //RXENAB
             dwm_write_reg(module, 0x0D, sys_ctrl_reg, 4);
 
-            // Go to receiving state
+            //Go to rx state
             robot_state = RSTATE_WAIT_RESPONSE_2;
-
-
             break;
         }
 
         //*****************************
         case RSTATE_WAIT_RESPONSE_2:
         {
-        	// get the first responcse and record t_reply1
-            // Try receive with timeout
+        	//get the first responcse and record t_reply1
+            //try receive with timeout
             if (dwm_receive(module, rx_buff, 6)) {
 
-                // Check response contents
+                //check response contents
                 if (!process_response_2(rx_buff, 6, &t_rtt_2_from_remote)) {
-                    // Bad response format
+                    //if bad response format
                     robot_state = RSTATE_ERROR_RECOVERY;
                     return false;
                 }
 
-                // Save RX time
+                // Save rx time
                 t_rx_resp_2 = read_timestamp(module, 0x15);
 
                 robot_state = RSTATE_COMPUTE;
@@ -594,7 +597,7 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
 
         case RSTATE_COMPUTE:
         {
-            uint64_t t_rtt_1  = ts_diff(t_rx_resp,   t_tx_poll); // correct
+            uint64_t t_rtt_1  = ts_diff(t_rx_resp,   t_tx_poll); 
 //            uint64_t t_rtt_2  = ts_diff(t_rx_resp_2, t_tx_poll_2);
             uint64_t t_rtt_2  = t_rtt_2_from_remote;
 
@@ -614,17 +617,17 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
 
 
 //            double reply2 = (double)t_reply_2;
-
+            // calculate total propagation time
             double t_prop = (((rtt1 * rtt2) - (reply1 * reply2))
                           / (rtt1 + rtt2 + reply1 + reply2));
 
-
+            // reduce antenna delay
             t_prop -= module->antenna_delay;
             if (t_prop < 0) {
                 robot_state = RSTATE_ERROR_RECOVERY;
                 return false;
             }
-
+            // convert DTU to meters
             double distance_m = t_prop * DWT_TIME_UNITS * 299792458.0;
             *distance_cm_out = (distance_m * 100.0);
             *distance_cm_out += module->offset_cm;
@@ -635,16 +638,16 @@ bool robot_ranging_step(DWM_Module* module, int* distance_cm_out, bool* standby_
         // --------------------------------------------------------------------
         case RSTATE_ERROR_RECOVERY:
         {
-            // Abort any pending operation
+            //abort any pending operations
             uint8_t sys_ctrl[4] = {0};
             sys_ctrl[0] |= (1 << 6);  // TRXOFF
             dwm_write_reg(module, 0x0D, sys_ctrl, 4);
 
-            // Clear all status (including HPDWARN)
+            //clear all status - also HPDWARN
             uint8_t clear[5] = {0};
             dwm_read_reg(module, 0x0F, clear, 5);
             dwm_write_reg(module, 0x0F, clear, 5);
-            // Reset state, maybe increment retry counters
+        
             robot_state = RSTATE_SEND_POLL;
             return false;
         }
@@ -690,38 +693,37 @@ RemotePosition calculate_remote_position(float dist_left_cm, float dist_right_cm
     // |dL - dR| must be <= B
     float diff = fabsf(dL - dR);
     if (diff > B) {
-        // Measurements are not possible, likely noise
+        //not mathematically possible
         result.valid = 0;
         return result;
     }
 
     // Calculate lateral offset from robot center
     // x > 0: remote is to the right of center
-    // x < 0: remote is to the left of center
+    // x < 0: remote is to the left
     float x = (dL * dL - dR * dR) / (2.0f * B);
 
     // Calculate forward distance
-    // Using left anchor as reference: dL² = (x + B/2)² + y²
+    // Using left anchor as reference: dL^2 = (x+B/2)^2+y^2
     float y_squared = dL * dL - (x + B / 2.0f) * (x + B / 2.0f);
 
-    // Clamp negative values
+    //clamp negative values
     if (y_squared < 0.0f) {
         y_squared = 0.0f;
     }
 
     float y = sqrtf(y_squared);
 
-    // Store x, y coordinates
+    //store x, y coordinates
     result.x_cm = x;
     result.y_cm = y;
 
-    // Distance from robot center to remote
-    result.distance_cm = sqrtf(x * x + y * y);
+    //distance from robot center to remote
+    result.distance_cm = sqrtf(x*x + y*y);
 
-    // Angle: atan2(y, x) gives angle from +X axis (right side)
-    // Result: 0° = right, 90° = forward, 180° = left
-    result.angle_deg = atan2f(y, x) * RAD_TO_DEG;
-
+    // Angle: atan2(y,x) gives angle from + x axis
+    // Result: 0° =right, 90° =forward, 180° =left
+    result.angle_deg = atan2f(y,x)*RAD_TO_DEG;
     result.valid = 1;
     return result;
 }
@@ -736,7 +738,6 @@ int snap_to_45(int angle)
 
     // keep result in 0–359
     snapped = snapped % 360;
-
     return snapped;
 }
 

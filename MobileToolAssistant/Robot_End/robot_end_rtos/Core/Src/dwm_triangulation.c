@@ -3,6 +3,7 @@
 
 #define POSITION_AVG_COUNT 5
 
+// Active anchor
 typedef enum {
     ANCHOR_LEFT = 0,
     ANCHOR_RIGHT
@@ -49,6 +50,13 @@ typedef struct
 
 static DWM_TriangulationState s_tri;
 
+
+/**
+ * Initializes the triangulation.
+ * Configures GPIO pins, resets both DWM modules, and performs initial 
+ * register configuration via SPI.
+ * @param hspi Pointer to the SPI handle used for communication.
+ */
 void DWM_Triangulation_Init(SPI_HandleTypeDef *hspi)
 {
     memset(&s_tri, 0, sizeof(s_tri));
@@ -82,14 +90,13 @@ void DWM_Triangulation_Init(SPI_HandleTypeDef *hspi)
     dwm_configure(&s_tri.left_anchor);
     dwm_configure(&s_tri.right_anchor);
 
+    // SPI starts slow PRESCALER = 256 for configuration, then increase to PRESCALER_8
     HAL_SPI_DeInit(s_tri.hspi);
     s_tri.hspi->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
     HAL_SPI_Init(s_tri.hspi);
 
-
 	uint8_t device_id_right[4] = {0};
 	dwm_read_reg(&s_tri.left_anchor, 0x00, device_id_right, 4);
-
 
 	uint8_t device_id_left[4] = {0};
 	dwm_read_reg(&s_tri.right_anchor, 0x00, device_id_left, 4);
@@ -98,6 +105,11 @@ void DWM_Triangulation_Init(SPI_HandleTypeDef *hspi)
 	 int dummy;
 }
 
+/**
+ * Main state machine step for distance gathering.
+ * Alternates ranging between left and right anchors, averages results, 
+ * and triggers a new position calculation once enough samples are collected.
+ */
 void DWM_Triangulation_TaskStep(void)
 {
 	dwm_read_reg(&s_tri.left_anchor, 0x00, dwm1_device_id, 4);
@@ -144,7 +156,7 @@ void DWM_Triangulation_TaskStep(void)
             s_tri.right_count++;
 
             if (s_tri.right_count >= POSITION_AVG_COUNT)
-            {
+            { 
                 s_tri.right_avg = s_tri.right_sum / POSITION_AVG_COUNT;
                 s_tri.right_avg_ready = true;
                 s_tri.right_sum = 0;
@@ -168,6 +180,12 @@ void DWM_Triangulation_TaskStep(void)
     }
 }
 
+
+/**
+ * Retrieves the most recently calculated remote position.
+ * @param pos Pointer to a RemotePosition struct.
+ * @return true if a new valid position was available, false otherwise.
+ */
 bool DWM_Triangulation_GetPosition(RemotePosition *pos)
 {
     if ((pos == NULL) || (!s_tri.new_position_ready))
